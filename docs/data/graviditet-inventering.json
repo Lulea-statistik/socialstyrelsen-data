@@ -1,0 +1,330 @@
+[
+  {
+    "file": "graviditeter, förlossningar och nyfödda - data - antal - 1973-2024.csv",
+    "size_bytes": 16893729,
+    "headers": [
+      "Mått",
+      "År",
+      "Region",
+      "Variabel",
+      "Paritet",
+      "Ålder",
+      "Värde"
+    ],
+    "sample_rows": [
+      [
+        "1",
+        "1973",
+        "00000",
+        "V17",
+        "0",
+        "0",
+        "108478"
+      ],
+      [
+        "1",
+        "1973",
+        "00000",
+        "V17",
+        "0",
+        "11",
+        "43447"
+      ],
+      [
+        "1",
+        "1973",
+        "00000",
+        "V17",
+        "0",
+        "22",
+        "41825"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - meta - åldrar.csv",
+    "size_bytes": 98,
+    "headers": [
+      "Ålder",
+      "Text"
+    ],
+    "sample_rows": [
+      [
+        "0",
+        "Alla åldrar"
+      ],
+      [
+        "11",
+        "-24 år"
+      ],
+      [
+        "22",
+        "25-29 år"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - meta - variabler.csv",
+    "size_bytes": 10635,
+    "headers": [
+      "Variabel",
+      "Text",
+      "Grupp",
+      "Beskrivning(html)"
+    ],
+    "sample_rows": [
+      [
+        "G1",
+        "Graviditet",
+        "0",
+        "<p><b>Graviditet</b></p><p>Medicinska födelseregistret innehåller uppgifter om graviditeter som lett till förlossning. Det går därför inte att ta fram statistik på antal graviditeter, utan endast på antal förlossningar (välj Variabel: Förlossning, Alla förlossningar. Mått: Antal).</p>"
+      ],
+      [
+        "V01",
+        "Medelålder",
+        "G1",
+        "<p><b>Medelålder</b></p><p>Avser ålder vid förlossning.</p>"
+      ],
+      [
+        "G11",
+        "Mödrarnas BMI vid inskrivning till mödrahälsovården",
+        "G1",
+        "<p><b>BMI</b></p><p>BMI (Body Mass Index, kroppsmasseindex) är ett sätt att beskriva vikten i förhållande till längden. Genom formeln vikten i kg/längden i m² räknar man ut BMI</p><p>WHO delar in BMI i följande kategorier:<br />Undervikt: BMI < 18,5<br />Normalvikt: BMI 18,5 – 24,9<br />Övervikt: BMI 25,0 – 29,9<br />Fetma: BMI >= 30,0</p>"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - meta - region.csv",
+    "size_bytes": 403,
+    "headers": [
+      "Region",
+      "Text"
+    ],
+    "sample_rows": [
+      [
+        "00000",
+        "Riket"
+      ],
+      [
+        "00110",
+        "Stockholm"
+      ],
+      [
+        "00112",
+        "Uppsala"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - meta - paritet.csv",
+    "size_bytes": 63,
+    "headers": [
+      "Paritet",
+      "Text"
+    ],
+    "sample_rows": [
+      [
+        "0",
+        "Totalt"
+      ],
+      [
+        "7",
+        "Förstföderskor"
+      ],
+      [
+        "8",
+        "Omföderskor"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - meta - mått.csv",
+    "size_bytes": 98,
+    "headers": [
+      "Mått",
+      "Text"
+    ],
+    "sample_rows": [
+      [
+        "1",
+        "Antal"
+      ],
+      [
+        "2",
+        "Procent"
+      ],
+      [
+        "3",
+        "Medelvärde"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - data - procent - 1973-2024.csv",
+    "size_bytes": 15462462,
+    "headers": [
+      "Mått",
+      "År",
+      "Region",
+      "Variabel",
+      "Paritet",
+      "Ålder",
+      "Värde"
+    ],
+    "sample_rows": [
+      [
+        "2",
+        "1973",
+        "00000",
+        "V18",
+        "0",
+        "0",
+        "5,3"
+      ],
+      [
+        "2",
+        "1973",
+        "00000",
+        "V18",
+        "0",
+        "11",
+        "4"
+      ],
+      [
+        "2",
+        "1973",
+        "00000",
+        "V18",
+        "0",
+        "22",
+        "4,9"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - data - per 1 000 levande födda - 1973-2024.csv",
+    "size_bytes": 460528,
+    "headers": [
+      "Mått",
+      "År",
+      "Region",
+      "Variabel",
+      "Paritet",
+      "Ålder",
+      "Värde"
+    ],
+    "sample_rows": [
+      [
+        "5",
+        "1973",
+        "00000",
+        "V50",
+        "0",
+        "0",
+        "6,9"
+      ],
+      [
+        "5",
+        "1973",
+        "00000",
+        "V50",
+        "0",
+        "11",
+        "7,1"
+      ],
+      [
+        "5",
+        "1973",
+        "00000",
+        "V50",
+        "0",
+        "22",
+        "6,6"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - data - per 1 000 födda - 1973-2024.csv",
+    "size_bytes": 232233,
+    "headers": [
+      "Mått",
+      "År",
+      "Region",
+      "Variabel",
+      "Paritet",
+      "Ålder",
+      "Värde"
+    ],
+    "sample_rows": [
+      [
+        "4",
+        "1973",
+        "00000",
+        "V49",
+        "0",
+        "0",
+        "7,2"
+      ],
+      [
+        "4",
+        "1973",
+        "00000",
+        "V49",
+        "0",
+        "11",
+        "6,4"
+      ],
+      [
+        "4",
+        "1973",
+        "00000",
+        "V49",
+        "0",
+        "22",
+        "6,6"
+      ]
+    ]
+  },
+  {
+    "file": "graviditeter, förlossningar och nyfödda - data - medelvärde - 1973-2024.csv",
+    "size_bytes": 2084119,
+    "headers": [
+      "Mått",
+      "År",
+      "Region",
+      "Variabel",
+      "Paritet",
+      "Ålder",
+      "Värde"
+    ],
+    "sample_rows": [
+      [
+        "3",
+        "1973",
+        "00000",
+        "V01",
+        "0",
+        "0",
+        "26"
+      ],
+      [
+        "3",
+        "1973",
+        "00000",
+        "V01",
+        "0",
+        "11",
+        "21,5"
+      ],
+      [
+        "3",
+        "1973",
+        "00000",
+        "V01",
+        "0",
+        "22",
+        "26,8"
+      ]
+    ]
+  }
+]
