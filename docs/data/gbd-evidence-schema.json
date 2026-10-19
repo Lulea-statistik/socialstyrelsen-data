@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "description": "Contract for verified GBD risk attributable estimates. No unverified figures allowed in production.",
+  "required_fields": [
+    "gbd_release",
+    "location",
+    "year",
+    "sex",
+    "age",
+    "gbd_cause_id",
+    "gbd_risk_id",
+    "measure",
+    "value",
+    "lower",
+    "upper",
+    "source_url",
+    "mapping_review_status",
+    "license_review_status"
+  ],
+  "allowed_review_status": [
+    "approved",
+    "partial",
+    "unverified"
+  ],
+  "sample_records": [],
+  "notes": [
+    "PAF fractions not exclusive across risks; do not add them.",
+    "Heritability is not an attribution percentage.",
+    "Do not project national fractions to Swedish counties without assumptions.",
+    "Publish only records with approved mapping and licensing."
+  ]
+}
