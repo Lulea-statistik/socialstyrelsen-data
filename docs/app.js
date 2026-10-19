@@ -113,6 +113,18 @@ function drawMaternity(){
 }
 
 
+
+let verifiedGBD=[];
+async function loadVerifiedGBD(){
+ try{
+  const response=await fetch('data/gbd-verified.json');
+  if(!response.ok)return;
+  const payload=await response.json();
+  verifiedGBD=(payload.records||[]).filter(r=>r.mapping_review_status==='approved'&&r.license_review_status==='approved');
+  renderRisk();
+ }catch(e){console.warn('GBD estimates unavailable',e)}
+}
+
 const gbdReview={ 'C00-D48':'Neoplasms','I00-I99':'Cardiovascular diseases','J00-J99':'Respiratory diseases','A00-B99':'Communicable diseases','V01-Y98':'Injuries'};
 function populateRisk(){
  if(!dataset)return;
@@ -136,4 +148,4 @@ for(const id of ['risk-deaths','risk-paf'])el(id).addEventListener('input',calcR
 
 document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('explore').hidden=a!=='dodsorsaker';el('maternity').hidden=a!=='fodsel';el('risk-panel').hidden=a!=='risk';if(a==='risk')populateRisk();if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker';let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
 el('csv').addEventListener('click',()=>{const txt='År;Värde\n'+shown.map(r=>r[1]+';'+String(r[6]).replace('.',',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='socialstyrelsen-urval.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
-start();fetchAges();
+start();fetchAges();loadVerifiedGBD();
