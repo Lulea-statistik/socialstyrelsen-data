@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "gbd_edition": "GBD 2021",
+  "status": "review_candidates_only",
+  "source": "https://ghdx.healthdata.org/gbd-2021/data-input-sources",
+  "note": "These are thematic ICD groups suggested for review, not validated GBD cause IDs or risk-cause pairs. No risk fractions supplied.",
+  "candidates": [
+    {
+      "icd": "C00-D48",
+      "gbd_topic": "Neoplasms",
+      "mapping_status": "unverified_broad_group"
+    },
+    {
+      "icd": "I00-I99",
+      "gbd_topic": "Cardiovascular diseases",
+      "mapping_status": "unverified_broad_group"
+    },
+    {
+      "icd": "J00-J99",
+      "gbd_topic": "Respiratory diseases",
+      "mapping_status": "unverified_broad_group"
+    },
+    {
+      "icd": "A00-B99",
+      "gbd_topic": "Communicable diseases",
+      "mapping_status": "unverified_broad_group"
+    },
+    {
+      "icd": "V01-Y98",
+      "gbd_topic": "Injuries",
+      "mapping_status": "unverified_broad_group"
+    }
+  ]
+}
