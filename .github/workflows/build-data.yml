@@ -1,5 +1,8 @@
 name: Bygg Socialstyrelsens data
 on:
+  push:
+    paths:
+      - 'scripts/build_dodsorsaker.py'
   workflow_dispatch:
   schedule:
     - cron: '25 7 10 * *'
