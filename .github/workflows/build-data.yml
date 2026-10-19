@@ -21,11 +21,12 @@ jobs:
         run: python scripts/build_dodsorsaker.py
       - name: Kontrollera genererat material
         run: python -m json.tool docs/data/dodsorsaker.json > /dev/null
+          python -m json.tool docs/data/dodsorsaker-alder.json > /dev/null
       - name: Spara uppdaterade data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/dodsorsaker.json
+          git add docs/data/dodsorsaker.json docs/data/dodsorsaker-alder.json
           if ! git diff --cached --quiet; then
             git commit -m "Uppdatera bearbetade dödsorsaksdata"
             git push
