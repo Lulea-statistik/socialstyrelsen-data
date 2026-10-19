@@ -39,7 +39,7 @@ function drawRegions(){
  const max=Math.max(1,...vals),lo=Math.min(...lines.flatMap(l=>l.rows.map(r=>r[1]))),hi=Math.max(...lines.flatMap(l=>l.rows.map(r=>r[1])));
  const X=t=>65+(t-lo)/(hi-lo||1)*895,Y=v=>315-v/max*275;
  function node(tag,attrs,text){const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;svg.append(n);return n}
- for(let i=0;i<=4;i++){const yy=315-i*275/4;node('line',{x1:65,y1:yy,x2:965,y2:yy,stroke:'#e6e9ef'});node('text',{x:6,y:yy+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(max*i/4))}
+ for(let i=0;i<=4;i++){const yy=315-i*275/4;node('line',{x1:65,y1:yy,x2:965,y2:yy,stroke:'#e6e9ef'});node('text',{x:6,y:yy+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(min+span*i/4))}
  for(let yr=lo;yr<=hi;yr+=Math.max(1,Math.ceil((hi-lo)/7)))node('text',{x:X(yr)-14,y:346},yr);
  lines.forEach((l,i)=>{const color=palette[i%palette.length];node('polyline',{points:l.rows.map(r=>X(r[1])+','+Y(r[6])).join(' '),fill:'none',stroke:color,'stroke-width':2,opacity:.88});const span=document.createElement('span');span.textContent='● '+metaLabel('region',l.code);span.style.color=color;legend.append(span);for(const r of l.rows){const dot=node('circle',{cx:X(r[1]),cy:Y(r[6]),r:3,fill:color,tabindex:0});const title=document.createElementNS(ns,'title');title.textContent=metaLabel('region',l.code)+' '+r[1]+': '+r[6];dot.append(title)}})
 }
@@ -53,7 +53,7 @@ function chartCompare(chartId,legendId,lines){
  const svg=el(chartId),legend=el(legendId);svg.replaceChildren();legend.replaceChildren();
  const ns='http://www.w3.org/2000/svg',vals=lines.flatMap(l=>l.rows.map(r=>r[6])).filter(Number.isFinite);
  if(!vals.length){const t=document.createElementNS(ns,'text');t.setAttribute('x',60);t.setAttribute('y',160);t.textContent='Ingen tillgänglig statistik för detta urval';svg.append(t);return}
- const max=Math.max(1,...vals),all=lines.flatMap(l=>l.rows.map(r=>r[1])),lo=Math.min(...all),hi=Math.max(...all),X=t=>65+(t-lo)/(hi-lo||1)*890,Y=v=>315-v/max*275;
+ const max=Math.max(...vals),min=chartId==='sex-chart'?Math.min(...vals):Math.min(0,...vals),span=max-min||1,all=lines.flatMap(l=>l.rows.map(r=>r[1])),lo=Math.min(...all),hi=Math.max(...all),X=t=>65+(t-lo)/(hi-lo||1)*890,Y=v=>315-(v-min)/span*275;
  function node(tag,attrs,label){const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(label!==undefined)n.textContent=label;svg.append(n);return n}
  for(let i=0;i<=4;i++){const y=315-i*275/4;node('line',{x1:65,y1:y,x2:955,y2:y,stroke:'#e5e7eb'});node('text',{x:5,y:y+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(max*i/4))}
  for(let yr=lo;yr<=hi;yr+=Math.max(1,Math.ceil((hi-lo)/7)))node('text',{x:X(yr)-15,y:346},yr);
