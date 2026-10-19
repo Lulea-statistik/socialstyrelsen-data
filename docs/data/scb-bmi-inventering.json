@@ -1,0 +1,19 @@
+{
+  "source": "https://www.statistikdatabasen.scb.se/Resources/PX/bulk/ssd/sv/TAB6607_sv.zip",
+  "files": [
+    {
+      "name": "TAB6607_sv.csv",
+      "size": 215313,
+      "sample": [
+        "\"Body Mass Index\",\"�lder\",\"k�n\",\"�rsintervall\",\"tabellinneh�ll\",\"Body Mass Index (BMI)\"",
+        "\"undervikt (BMI under 18,5)\",\"16-84 �r\",\"kvinnor\",\"1980-1981\",\"Body Mass Index (BMI)\",4.9",
+        "\"undervikt (BMI under 18,5)\",\"16-84 �r\",\"kvinnor\",\"1980-1981\",\"Body Mass Index (BMI) (os�kerhetstal)\",0.5",
+        "\"undervikt (BMI under 18,5)\",\"16-84 �r\",\"kvinnor\",\"1982-1983\",\"Body Mass Index (BMI)\",..",
+        "\"undervikt (BMI under 18,5)\",\"16-84 �r\",\"kvinnor\",\"1982-1983\",\"Body Mass Index (BMI) (os�kerhetstal)\",..",
+        "\"undervikt (BMI under 18,5)\",\"16-84 �r\",\"kvinnor\",\"1984-1985\",\"Body Mass Index (BMI)\",..",
+        "\"undervikt (BMI under 18,5)\",\"16-84 �r\",\"kvinnor\",\"1984-1985\",\"Body Mass Index (BMI) (os�kerhetstal)\",..",
+        "\"undervikt (BMI under 18,5)\",\"16-84 �r\",\"kvinnor\",\"1986-1987\",\"Body Mass Index (BMI)\",.."
+      ]
+    }
+  ]
+}
