@@ -20,7 +20,8 @@ jobs:
       - name: Hämta och bearbeta officiella CSV-data
         run: python scripts/build_dodsorsaker.py
       - name: Kontrollera genererat material
-        run: python -m json.tool docs/data/dodsorsaker.json > /dev/null
+        run: |
+          python -m json.tool docs/data/dodsorsaker.json > /dev/null
           python -m json.tool docs/data/dodsorsaker-alder.json > /dev/null
       - name: Spara uppdaterade data
         run: |
