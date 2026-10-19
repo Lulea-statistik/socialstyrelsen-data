@@ -57,6 +57,34 @@ function draw(){
  el('rows').replaceChildren();for(const r of shown){const tr=document.createElement('tr');for(const val of [r[1],r[6]]){const td=document.createElement('td');td.textContent=val;tr.append(td)}el('rows').append(tr)}
 }
 async function start(){try{const response=await fetch('data/dodsorsaker.json');if(!response.ok)throw Error('Ingen publicerad sammanställning ännu');dataset=await response.json();for(const d of dim)fill(d);for(const [key,val]of Object.entries({diagnos:'99',region:'25',kon:'3',alder:'99'})){if([...el(key).options].some(x=>x.value===val))el(key).value=val}el('status').textContent='Årsvärden från Socialstyrelsens CSV-export. Filtrerbara data: '+dataset.data.length.toLocaleString('sv-SE')+' rader.';for(const d of [...dim,'matt'])el(d).addEventListener('change',()=>{if(['region','kon','alder'].includes(d)&&el('topprank').value!=='all')updateRank();draw()});el('topprank').addEventListener('change',()=>{if(el('topprank').value!=='all')updateRank();else{fill('diagnos');el('status').textContent='Visar alla tillgängliga diagnoser'}draw()});el('rankmetric').addEventListener('change',()=>{if(el('topprank').value!=='all')updateRank();draw()});const allOptions=[...el('diagnos').options].map(o=>[o.value,o.textContent]);el('diagnos-sok').addEventListener('input',()=>{const q=el('diagnos-sok').value.toLocaleLowerCase('sv-SE').trim();const previous=el('diagnos').value;el('diagnos').replaceChildren();for(const [id,label] of allOptions){if(q && !(id+' '+label).toLocaleLowerCase('sv-SE').includes(q))continue;const opt=document.createElement('option');opt.value=id;opt.textContent=label;el('diagnos').append(opt)}if([...el('diagnos').options].some(o=>o.value===previous))el('diagnos').value=previous;draw()});draw()}catch(err){el('status').textContent=err.message+'. Kör arbetsflödet för datagenerering i GitHub Actions.';el('explore').hidden=true;el('results').hidden=true}}
-document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('explore').hidden=a!=='dodsorsaker';el('results').hidden=a!=='dodsorsaker';let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
+
+let maternity=null;
+async function loadMaternity(){
+ if(maternity)return;
+ const resp=await fetch('data/graviditet.json');if(!resp.ok){el('maternity-status').textContent='Databearbetning återstår. Kör Inventera graviditetsdata i Actions på nytt.';return}
+ maternity=await resp.json();
+ for(const [field,dim] of [['maternity-region','region'],['maternity-var','variabel'],['maternity-measure','matt']]){
+  const select=el(field);select.replaceChildren();for(const [code,label]of Object.entries(maternity.meta[dim])){const has=maternity.data.some(r=>String(r[dim==='matt'?0:dim==='region'?2:3])===code);if(!has)continue;const opt=document.createElement('option');opt.value=code;opt.textContent=label;select.append(opt)}
+ }
+ if([...el('maternity-region').options].some(o=>o.value==='00000'))el('maternity-region').value='00000';
+ for(const d of ['maternity-region','maternity-var','maternity-measure'])el(d).addEventListener('change',drawMaternity);
+ drawMaternity();
+}
+function drawMaternity(){
+ const measure=el('maternity-measure').value,region=el('maternity-region').value,variable=el('maternity-var').value;
+ const data=maternity.data.filter(r=>String(r[0])===measure&&r[2]===region&&r[3]===variable).sort((a,b)=>a[1]-b[1]);
+ el('maternity-status').textContent=data.length?'Årsserie: '+data[0][1]+'–'+data[data.length-1][1]:'Inga observationer för detta urval';
+ const svg=el('maternity-chart');svg.replaceChildren();const ns='http://www.w3.org/2000/svg';
+ function n(tag,attr,t){const e=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attr))e.setAttribute(k,v);if(t!==undefined)e.textContent=t;svg.append(e);return e}
+ if(!data.length)return;
+ const max=Math.max(...data.map(r=>r[4]),0.01),min=Math.min(0,...data.map(r=>r[4]));
+ const yr0=data[0][1],yr1=data[data.length-1][1],X=yr=>65+(yr-yr0)/(yr1-yr0||1)*880,Y=v=>300-(v-min)/(max-min||1)*250;
+ for(let j=0;j<=4;j++){const v=min+(max-min)*j/4,yy=Y(v);n('line',{x1:65,y1:yy,x2:945,y2:yy,stroke:'#e2e8f0'});n('text',{x:3,y:yy+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(v))}
+ for(let yr=yr0;yr<=yr1;yr+=Math.max(1,Math.ceil((yr1-yr0)/7)))n('text',{x:X(yr)-15,y:326},yr);
+ n('polyline',{points:data.map(r=>X(r[1])+','+Y(r[4])).join(' '),stroke:'#991b2b','stroke-width':3,fill:'none'});
+ for(const r of data){const dot=n('circle',{cx:X(r[1]),cy:Y(r[4]),r:5,fill:'#991b2b'}),tip=document.createElementNS(ns,'title');tip.textContent=r[1]+': '+new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(r[4])+' ('+maternity.meta.matt[measure]+')';dot.append(tip)}
+}
+
+document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('explore').hidden=a!=='dodsorsaker';el('maternity').hidden=a!=='fodsel';if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker';let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
 el('csv').addEventListener('click',()=>{const txt='År;Värde\n'+shown.map(r=>r[1]+';'+String(r[6]).replace('.',',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='socialstyrelsen-urval.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
 start();
