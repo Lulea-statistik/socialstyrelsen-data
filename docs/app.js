@@ -44,6 +44,33 @@ function drawRegions(){
  lines.forEach((l,i)=>{const color=palette[i%palette.length];node('polyline',{points:l.rows.map(r=>X(r[1])+','+Y(r[6])).join(' '),fill:'none',stroke:color,'stroke-width':2,opacity:.88});const span=document.createElement('span');span.textContent='● '+metaLabel('region',l.code);span.style.color=color;legend.append(span);for(const r of l.rows){const dot=node('circle',{cx:X(r[1]),cy:Y(r[6]),r:3,fill:color,tabindex:0});const title=document.createElementNS(ns,'title');title.textContent=metaLabel('region',l.code)+' '+r[1]+': '+r[6];dot.append(title)}})
 }
 
+
+let ageDataset=null;
+async function fetchAges(){
+ try{const r=await fetch('data/dodsorsaker-alder.json');if(!r.ok)throw Error('Åldersfilen har ännu inte genererats');ageDataset=await r.json();drawComparisons()}catch(e){el('age-status').textContent=e.message+'. Kör arbetsflödet Bygg Socialstyrelsens data.'}
+}
+function chartCompare(chartId,legendId,lines){
+ const svg=el(chartId),legend=el(legendId);svg.replaceChildren();legend.replaceChildren();
+ const ns='http://www.w3.org/2000/svg',vals=lines.flatMap(l=>l.rows.map(r=>r[6])).filter(Number.isFinite);
+ if(!vals.length){const t=document.createElementNS(ns,'text');t.setAttribute('x',60);t.setAttribute('y',160);t.textContent='Ingen tillgänglig statistik för detta urval';svg.append(t);return}
+ const max=Math.max(1,...vals),all=lines.flatMap(l=>l.rows.map(r=>r[1])),lo=Math.min(...all),hi=Math.max(...all),X=t=>65+(t-lo)/(hi-lo||1)*890,Y=v=>315-v/max*275;
+ function node(tag,attrs,label){const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(label!==undefined)n.textContent=label;svg.append(n);return n}
+ for(let i=0;i<=4;i++){const y=315-i*275/4;node('line',{x1:65,y1:y,x2:955,y2:y,stroke:'#e5e7eb'});node('text',{x:5,y:y+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(max*i/4))}
+ for(let yr=lo;yr<=hi;yr+=Math.max(1,Math.ceil((hi-lo)/7)))node('text',{x:X(yr)-15,y:346},yr);
+ lines.forEach((l,i)=>{if(!l.rows.length)return;const color=palette[i%palette.length];node('polyline',{points:l.rows.map(r=>X(r[1])+','+Y(r[6])).join(' '),fill:'none',stroke:color,'stroke-width':2.3});const span=document.createElement('span');span.textContent='● '+l.label;span.style.color=color;legend.append(span);for(const r of l.rows){const dot=node('circle',{cx:X(r[1]),cy:Y(r[6]),r:3.5,fill:color,tabindex:0});const title=document.createElementNS(ns,'title');title.textContent=l.label+' – '+r[1]+': '+new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(r[6]);dot.append(title)}})
+}
+function drawComparisons(){
+ if(!dataset)return;
+ const metric=Number(el('matt').value),diag=el('diagnos').value,region=el('region').value,age=el('alder').value,sex=el('kon').value;
+ const sexes=['1','2'].map(k=>({label:metaLabel('kon',k),rows:dataset.data.filter(r=>r[0]===metric&&r[2]===region&&r[3]===diag&&r[4]===k&&r[5]===age).sort((a,b)=>a[1]-b[1])}));
+ chartCompare('sex-chart','sex-legend',sexes);
+ if(!ageDataset)return;
+ const ages=Object.keys(ageDataset.meta.alder).filter(k=>k!=='99'&&ageDataset.data.some(r=>r[5]===k));
+ const lines=ages.map(k=>({label:metaLabel('alder',k),rows:ageDataset.data.filter(r=>r[0]===metric&&r[2]===region&&r[3]===diag&&r[4]===sex&&r[5]===k).sort((a,b)=>a[1]-b[1])})).filter(l=>l.rows.length);
+ el('age-status').textContent=lines.length?'Åldersspecifika årsvärden. Vid mått per 100 000 används respektive åldersgrupps befolkning som nämnare.':'Denna diagnos saknar ännu åldersuppdelade data i webbversionen.';
+ chartCompare('age-chart','age-legend',lines);
+}
+
 function draw(){
  const keys=[el('matt').value,...['year','region','diagnos','kon','alder'].map(x=>x)]; // dimensions from imported rows
  shown=dataset.data.filter(r=> String(r[0])===keys[0]&&String(r[2])===el('region').value&&String(r[3])===el('diagnos').value&&String(r[4])===el('kon').value&&String(r[5])===el('alder').value).sort((a,b)=>a[1]-b[1]);
@@ -53,7 +80,7 @@ function draw(){
  const v=shown.map(r=>Number(r[6])).filter(Number.isFinite),max=Math.max(1,...v),min=0;const x=y=>70+(y-1997)/28*895,y=z=>300-(z-min)/(max-min)*260;for(let j=0;j<=4;j++){const yy=300-j*65;node('line',{x1:70,y1:yy,x2:965,y2:yy,stroke:'#e5e7eb'});node('text',{x:8,y:yy+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(max*j/4))}for(let yr=1997;yr<=2025;yr+=4)node('text',{x:x(yr)-14,y:325},yr);
  const pts=shown.filter(r=>Number.isFinite(Number(r[6]))).map(r=>x(r[1])+','+y(Number(r[6]))).join(' ');node('polyline',{points:pts,fill:'none',stroke:'#a31d30','stroke-width':3,'stroke-linejoin':'round'});
  for(const r of shown){if(!Number.isFinite(Number(r[6])))continue;const c=node('circle',{cx:x(r[1]),cy:y(Number(r[6])),r:4,fill:'#a31d30'});const tip=el('hoverinfo');c.addEventListener('pointerenter',()=>{tip.innerHTML=info(r);tip.hidden=false});c.addEventListener('pointerleave',()=>{tip.hidden=true});c.addEventListener('focus',()=>{tip.innerHTML=info(r);tip.hidden=false});c.addEventListener('blur',()=>{tip.hidden=true});c.setAttribute('tabindex','0');c.setAttribute('aria-label',r[1]+': '+r[6]);c.setAttribute('r','6')}
- drawRegions();
+ drawRegions();drawComparisons();
  el('rows').replaceChildren();for(const r of shown){const tr=document.createElement('tr');for(const val of [r[1],r[6]]){const td=document.createElement('td');td.textContent=val;tr.append(td)}el('rows').append(tr)}
 }
 async function start(){try{const response=await fetch('data/dodsorsaker.json');if(!response.ok)throw Error('Ingen publicerad sammanställning ännu');dataset=await response.json();for(const d of dim)fill(d);for(const [key,val]of Object.entries({diagnos:'99',region:'25',kon:'3',alder:'99'})){if([...el(key).options].some(x=>x.value===val))el(key).value=val}el('status').textContent='Årsvärden från Socialstyrelsens CSV-export. Filtrerbara data: '+dataset.data.length.toLocaleString('sv-SE')+' rader.';for(const d of [...dim,'matt'])el(d).addEventListener('change',()=>{if(['region','kon','alder'].includes(d)&&el('topprank').value!=='all')updateRank();draw()});el('topprank').addEventListener('change',()=>{if(el('topprank').value!=='all')updateRank();else{fill('diagnos');el('status').textContent='Visar alla tillgängliga diagnoser'}draw()});el('rankmetric').addEventListener('change',()=>{if(el('topprank').value!=='all')updateRank();draw()});const allOptions=[...el('diagnos').options].map(o=>[o.value,o.textContent]);el('diagnos-sok').addEventListener('input',()=>{const q=el('diagnos-sok').value.toLocaleLowerCase('sv-SE').trim();const previous=el('diagnos').value;el('diagnos').replaceChildren();for(const [id,label] of allOptions){if(q && !(id+' '+label).toLocaleLowerCase('sv-SE').includes(q))continue;const opt=document.createElement('option');opt.value=id;opt.textContent=label;el('diagnos').append(opt)}if([...el('diagnos').options].some(o=>o.value===previous))el('diagnos').value=previous;draw()});draw()}catch(err){el('status').textContent=err.message+'. Kör arbetsflödet för datagenerering i GitHub Actions.';el('explore').hidden=true;el('results').hidden=true}}
@@ -87,4 +114,4 @@ function drawMaternity(){
 
 document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('explore').hidden=a!=='dodsorsaker';el('maternity').hidden=a!=='fodsel';if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker';let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
 el('csv').addEventListener('click',()=>{const txt='År;Värde\n'+shown.map(r=>r[1]+';'+String(r[6]).replace('.',',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='socialstyrelsen-urval.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
-start();
+start();fetchAges();
