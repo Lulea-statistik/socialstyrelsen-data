@@ -67,3 +67,24 @@ Denna anteckning är en **källinventering och riskbedömning**, inte en färdig
 - Sammanläggning av flera redan beräknade dödstal är **inte** korrekt. Beräkna i så fall antal och relevanta nämnare först, med korrekt standardisering.
 
 Källa: https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__LE__LE0201__LE0201H%C3%A4lsa/Tema526N/
+
+## Utbildningsunderlag UF0506: prövning mot dödsorsaker 5.26
+
+Källor:
+- https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__UF__UF0506__UF0506B/UtbSUNBefN/ : SUN 2020-tabell med kön, ålder, nationell bakgrund, utbildning, inriktning och år **2019–2025**. **Population 16–74 år**, inte 35–84.
+- https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__UF__UF0506/ : UF0506 samtliga utbildningstabeller.
+- https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__UF__UF0506/Utbildning/ : regional befolkning efter ålder, utbildning, kön och år. Kontrollera åldersklasser och datum innan koppling.
+- https://www.scb.se/uf0506 : statistikprodukt med kvalitetsdeklarationer, framställningsdokument, SUN och dokument om utbildningsregistrets täckning.
+
+**Slutsats:** `UtbSUNBefN` är lämplig för fristående utbildningsstatistik och SUN-klassificering, men får **inte** användas som nämnare eller standardpopulation för hela 35–84-årsserien i SCB Tema526N: 75–84-åringarna saknas. Den är dessutom aggregerad efter utbildningsinriktning och nationell bakgrund; dessa variabler får inte summeras tillsammans med eventuella totaler och delgrupper utan kontroll.
+
+Utbildningsregistret redovisar bestånd och referenstid enligt varje tabell, ofta 31 december. Dödstal per 100 000 bygger på **medelfolkmängd**, vilket inte är identiskt med bestånd den 31 december. Dessutom kan SCB Tema526N:s tabellfotnot om 2019 års utbildningsuppgifter innebära annan frysning av utbildningsklassificeringen än UF0506:s årliga bestånd. Varken ett identiskt SUN-namn eller samma kalenderår garanterar likvärdig nämnare.
+
+**Krav innan dödstal återskapas:**
+1. Fastställ ålderstäckning inklusive **75–84** och upplösning **35–49, 50–64, 65–74, 75–84**, eller enbart använd källa som matchar exakt.
+2. Matcha SUN-grupper, källans könsindelning och population inklusive hantering av saknad utbildningsuppgift.
+3. Fastställ vilken utbildningsårgång som används för avlidna respektive population och om standardvikterna är fasta över åren.
+4. Rekonstruera medelfolkmängd och åldersstandardisering, inte bara använd 31 december-bestånd.
+5. Tills dess redovisa UF0506 och Tema526N som **två separata källserier**, utan automatisk beräkning av dödsrisk på utbildningsnivå.
+
+**Status:** Källorna inventerade, ingen befolkningsnämnare godkänd.
