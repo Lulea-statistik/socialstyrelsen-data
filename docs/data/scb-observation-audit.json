@@ -1,0 +1,89 @@
+{
+  "status": "observation_integrity_checked_not_icd_validated",
+  "tables": {
+    "age": {
+      "source_url": "https://api.scb.se/OV0104/v1/doris/sv/ssd/LE/LE0201/LE0201H%C3%A4lsa/Tema525",
+      "rows": 848,
+      "possible_dimension_combinations": 1008,
+      "missing_or_non_numeric_combinations": 160,
+      "observed_dimension_values": {
+        "Dodsorsak": [
+          "alk",
+          "and",
+          "hjärt",
+          "sjalv",
+          "skad",
+          "tot",
+          "tum",
+          "övr"
+        ],
+        "Alder": [
+          "0",
+          "1-14",
+          "15-29",
+          "30-44",
+          "45-59",
+          "60-74",
+          "75+"
+        ],
+        "Kon": [
+          "1",
+          "2"
+        ],
+        "Tid": [
+          "2017",
+          "2018",
+          "2019",
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ]
+      },
+      "measure_code": "0000034O",
+      "failures": []
+    },
+    "education": {
+      "source_url": "https://api.scb.se/OV0104/v1/doris/sv/ssd/LE/LE0201/LE0201H%C3%A4lsa/Tema526N",
+      "rows": 324,
+      "possible_dimension_combinations": 324,
+      "missing_or_non_numeric_combinations": 0,
+      "observed_dimension_values": {
+        "Dodsorsak": [
+          "and",
+          "daalk",
+          "dacov",
+          "hjärt",
+          "sjalv",
+          "skad",
+          "tot2",
+          "tum",
+          "övr"
+        ],
+        "UtbildningsNiva": [
+          "10",
+          "20",
+          "30"
+        ],
+        "Kon": [
+          "1",
+          "2"
+        ],
+        "Tid": [
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ]
+      },
+      "measure_code": "0000043J",
+      "failures": []
+    }
+  },
+  "approved_for_icd_aggregation": false,
+  "note": "Missing/non-numeric combinations cannot be classified as suppression or absent records from this filtered export alone. Re-fetch raw response to distinguish them."
+}
