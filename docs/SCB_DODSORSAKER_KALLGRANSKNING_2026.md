@@ -25,3 +25,24 @@
 5. Låt `approved_for_aggregation=false` gälla tills varje matchning kan styrkas separat.
 
 Denna anteckning är en **källinventering och riskbedömning**, inte en färdig ICD-validering.
+
+
+## Avgörande källfynd 2026-10-20: SCB indikator 5.26
+
+**Officiell dokumentation:** [SCB, Indikatorernas framställning och kvalitet, delmål 5, version 1.10 (mars 2026)](https://www.scb.se/contentassets/06990ee1fbc549fdbb333d72ea716128/delmal-5-indikatorernas-framstallning-och-kvalitet-v1.10.pdf), tryckta sidor 57–60, avsnitt 5.26 (PDF-sidor 57–60).
+
+**Åldersstandardisering bekräftad:** SCB anger att standardpopulationen är alla 35–84-åringar med utbildningsuppgift, indelade i fyra grupper **35–49, 50–64, 65–74, 75–84**. Publicerade utbildningsdödstal är åldersstandardiserade per 100 000 medelfolkmängd. Detta bekräftas också i SCB:s *På tal om kvinnor och män 2026*. Kontrollera separat om standardvikterna ändras mellan år; dokumentet ger inte en explicit fast referensårgång.
+
+**ICD-definitioner i dokumentets avsnitt Bearbetningar av data:**
+- Andningsorganens sjukdomar: ICD-10 **J**
+- Hjärt-kärlsjukdomar: **I**
+- Självmord / oklar avsikt: **X6–X7, X80–X84, Y1–Y2, Y30–Y34, Y870, Y872** (notationen återges som i SCB:s dokument; måste normaliseras och granskas innan kodmatchning)
+- Skador/förgiftningar: **S00–T98 med angivet undantag för självmord/oklar avsikt**. Detta avviker väsentligt från vår tidigare kandidat V01–Y98. Kontrollera även hur yttre orsaker hanteras.
+- Tumörer: **C, D0–D4**
+- Övrigt: övriga diagnoser
+- Alkoholrelaterad dödlighet: separat, **överlappande** urval där alkoholdiagnos finns **nämnd på dödsorsaksintyget**, inte endast underliggande diagnos. Koder enligt källan: E244, F10, G312, G621, G721, I426, K292, K700–709, K852, K860, O354, P043, Q860, T510–519, Y901–909, Y911–919, Z502, Z714, Z721.
+
+**Beslut:** Metodfrågan om åldersstandardisering är **löst i källan**. ICD-avgränsningar är nu **dokumenterade**, men inte automatiskt godkända för aggregering mot Socialstyrelsens standardtabeller; särskilt skador och alkohol kräver specialhantering. Fortsatt `approved_for_aggregation=false` till implementerade och testade likvärdighetskontroller.
+
+**Källkritisk not:** I PDF-texten verkar gruppen 50–64 vara felskriven som `50-664`. Åldersklasserna ovan är den rimliga fyrgruppsindelningen, men bör kontrolleras direkt med SCB före viktning.
+
