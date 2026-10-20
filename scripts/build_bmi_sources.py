@@ -28,7 +28,7 @@ def main():
     with load_zip(SOC,'socialstyrelsen-graviditet.zip') as z:
         n=next(n for n in z.namelist() if 'meta - variabler.csv' in n)
         variables={r['Variabel']:r for r in csv.DictReader(io.StringIO(decode_csv(z,n)),delimiter=';')}
-        candidates={k:v['Text'] for k,v in variables.items() if re.search(r'BMI|övervikt|fetma|obesitas|kroppsmasseindex',v['Text'],re.I)}
+        out['socialstyrelsen_metadata']={}\n        for meta_name,field in [('meta - mått.csv','Mått'),('meta - åldrar.csv','Ålder'),('meta - paritet.csv','Paritet'),('meta - region.csv','Region')]:\n            filename=next(n for n in z.namelist() if meta_name in n)\n            out['socialstyrelsen_metadata'][field]={row[field]:row['Text'] for row in csv.DictReader(io.StringIO(decode_csv(z,filename)),delimiter=';')}\n        candidates={k:v['Text'] for k,v in variables.items() if re.search(r'BMI|övervikt|fetma|obesitas|kroppsmasseindex',v['Text'],re.I)}
         out['socialstyrelsen_bmi_variables']=candidates
         for name in z.namelist():
             if ' - data - ' not in name or not name.endswith('.csv'):continue
