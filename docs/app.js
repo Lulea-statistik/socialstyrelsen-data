@@ -148,6 +148,7 @@ for(const id of ['risk-deaths','risk-paf'])el(id).addEventListener('input',calcR
 
 
 let scbEdu=null;
+
 function renderSCBEducation(){
  if(!scbEdu)return;
  const svg=el('scb-education-chart'),legend=el('scb-education-legend');svg.replaceChildren();legend.replaceChildren();
@@ -167,7 +168,7 @@ function renderSCBEducation(){
  const latest=Object.fromEntries(education.values.map(v=>[v,rows.find(r=>r.dimensions[education.code]===v&&Number(r.dimensions[year.code])===last)?.value]));
  const loEdu=latest['10'],hiEdu=latest['30'],fmt=v=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(v);
  const comparison=Number.isFinite(loEdu)&&Number.isFinite(hiEdu)&&hiEdu>0?' Skillnad förgymnasial–eftergymnasial '+fmt(loEdu-hiEdu)+' per 100 000; kvot '+fmt(loEdu/hiEdu)+'.':'';
- el('scb-education-status').textContent=lookup(cause,cc)+' – '+lookup(sex,ss)+'. Dödstal per 100 000, 35–84 år. Senaste år: '+last+'.'+comparison+' Ej verifierat åldersstandardiserade.';
+ el('scb-education-status').textContent=lookup(cause,cc)+' – '+lookup(sex,ss)+'. Dödstal per 100 000, 35–84 år. Senaste år: '+last+'.'+comparison+' Åldersstandardiserade enligt SCB:s indikatorbeskrivning 5.26.';
  const max=Math.max(1,...values)*1.1,years=series.flatMap(s=>s.rows.map(r=>r.year)),lo=Math.min(...years),hi=Math.max(...years),ns='http://www.w3.org/2000/svg',X=x=>70+(x-lo)/(hi-lo||1)*860,Y=y=>310-y/max*260;
  function n(tag,attrs,label){const item=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))item.setAttribute(k,v);if(label!==undefined)item.textContent=label;svg.append(item);return item}
  for(let i=0;i<=4;i++){const y=310-i*260/4;n('line',{x1:70,y1:y,x2:935,y2:y,stroke:'#e5e7eb'});n('text',{x:5,y:y+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(i*max/4))}
@@ -182,7 +183,73 @@ async function loadSCBEducation(){
 }
 for(const id of ['scb-education-cause','scb-education-sex'])el(id).addEventListener('change',renderSCBEducation);
 
-document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('explore').hidden=a!=='dodsorsaker';el('maternity').hidden=a!=='fodsel';el('risk-panel').hidden=a!=='risk';el('scb-education-panel').hidden=a!=='education';if(a==='education')loadSCBEducation();if(a==='risk')populateRisk();if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker';let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
+
+function setDefinitionMode(){
+ const scb=el('definition-mode').value==='scb';
+ const causeTab=document.querySelector('[data-area="dodsorsaker"]');
+ if(causeTab.getAttribute('aria-selected')!=='true')return;
+ el('explore').hidden=scb;
+ el('results').hidden=scb;
+ el('scb-definition-panel').hidden=!scb;
+ el('definition-notice').textContent=scb
+  ?'SCB:s egna publicerade dödsorsaksgrupper, hela Sverige. Åldersgrupper och mått avviker från ICD-läget. Ingen osäker ICD-mappning används.'
+  :'Socialstyrelsens ICD-grupper, med region, kön, ålder, antal och dödstal. Ingen automatisk SCB-omräkning används.';
+ if(scb)loadSCBDefinition();
+}
+function fillSCBDefinition(selectId,dimension){
+ const select=el(selectId),old=select.value;
+ select.replaceChildren();
+ for(let i=0;i<dimension.values.length;i++){
+  const opt=document.createElement('option');opt.value=dimension.values[i];opt.textContent=dimension.valueTexts[i]||opt.value;select.append(opt);
+ }
+ if([...select.options].some(o=>o.value===old))select.value=old;
+}
+function renderSCBDefinition(){
+ if(!scbEdu)return;
+ const src=scbEdu.sources.age;
+ if(!src){el('scb-definition-status').textContent='Ålderstabellen saknas.';return}
+ const dim=code=>src.dimensions.find(d=>d.code===code);
+ const cause=dim('Dodsorsak'),age=dim('Alder'),sex=dim('Kon');
+ if(!cause||!age||!sex){el('scb-definition-status').textContent='SCB:s dimensioner har ändrats.';return}
+ if(!el('scb-definition-cause').options.length){
+  fillSCBDefinition('scb-definition-cause',cause);
+  fillSCBDefinition('scb-definition-age',age);
+  fillSCBDefinition('scb-definition-sex',sex);
+ }
+ const selection={Dodsorsak:el('scb-definition-cause').value,Alder:el('scb-definition-age').value,Kon:el('scb-definition-sex').value};
+ const rows=scbEdu.observations.filter(r=>r.table==='age'&&Object.entries(selection).every(([k,v])=>r.dimensions[k]===v))
+  .map(r=>({year:Number(r.dimensions.Tid),value:r.value})).sort((a,b)=>a.year-b.year);
+ const svg=el('scb-definition-chart'),tbody=el('scb-definition-rows');
+ svg.replaceChildren();tbody.replaceChildren();
+ const label=(d,v)=>d.valueTexts[d.values.indexOf(v)]||v;
+ el('scb-definition-status').textContent=label(cause,selection.Dodsorsak)+' – '+label(age,selection.Alder)+', '+label(sex,selection.Kon)+'. '+rows.length+' numeriska årsvärden. Saknade/prickmarkerade värden ersätts inte med noll.';
+ const values=rows.filter(r=>Number.isFinite(r.value));
+ const ns='http://www.w3.org/2000/svg';
+ const node=(tag,attrs,label)=>{const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(label!==undefined)n.textContent=label;svg.append(n);return n};
+ if(values.length){
+  const max=Math.max(1,...values.map(r=>r.value))*1.1,years=src.dimensions.find(d=>d.code==='Tid').values.map(Number),lo=Math.min(...years),hi=Math.max(...years);
+  const X=x=>70+(x-lo)/(hi-lo||1)*860,Y=y=>300-y/max*250;
+  for(let i=0;i<=4;i++){const y=300-i*250/4;node('line',{x1:70,y1:y,x2:940,y2:y,stroke:'#e2e8f0'});node('text',{x:5,y:y+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(max*i/4))}
+  for(const yr of years)node('text',{x:X(yr)-15,y:332},String(yr));
+  // Break the line at missing years rather than implying an observed zero.
+  let segment=[];const flush=()=>{if(segment.length>1)node('polyline',{points:segment.map(r=>X(r.year)+','+Y(r.value)).join(' '),fill:'none',stroke:'#991b2b','stroke-width':3});segment=[]};
+  const map=new Map(values.map(r=>[r.year,r.value]));
+  for(const yr of years){if(!map.has(yr)){flush();continue}segment.push({year:yr,value:map.get(yr)})}flush();
+  for(const r of values){const n=node('circle',{cx:X(r.year),cy:Y(r.value),r:5,fill:'#991b2b'});const t=document.createElementNS(ns,'title');t.textContent=r.year+': '+r.value.toLocaleString('sv-SE');n.append(t)}
+ }
+ for(const year of src.dimensions.find(d=>d.code==='Tid').values){
+  const found=rows.find(r=>r.year===Number(year)),tr=document.createElement('tr');
+  for(const val of [year,found?found.value.toLocaleString('sv-SE'):'.. / saknas']){const td=document.createElement('td');td.textContent=val;tr.append(td)}tbody.append(tr);
+ }
+}
+async function loadSCBDefinition(){
+ await loadSCBEducation();
+ renderSCBDefinition();
+}
+el('definition-mode').addEventListener('change',setDefinitionMode);
+for(const id of ['scb-definition-cause','scb-definition-age','scb-definition-sex'])el(id).addEventListener('change',renderSCBDefinition);
+
+document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('definition-panel').hidden=a!=='dodsorsaker';el('scb-definition-panel').hidden=a!=='dodsorsaker'||el('definition-mode').value!=='scb';el('explore').hidden=a!=='dodsorsaker'||el('definition-mode').value==='scb';el('maternity').hidden=a!=='fodsel';el('risk-panel').hidden=a!=='risk';el('scb-education-panel').hidden=a!=='education';if(a==='education')loadSCBEducation();if(a==='risk')populateRisk();if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker'||el('definition-mode').value==='scb';if(a==='dodsorsaker')setDefinitionMode();let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
 el('csv').addEventListener('click',()=>{const txt='År;Värde\n'+shown.map(r=>r[1]+';'+String(r[6]).replace('.',',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='socialstyrelsen-urval.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
 
 let bmiData=null;
