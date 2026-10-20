@@ -4,11 +4,11 @@ Status: **pågående, ej godkänd för ICD-aggregering**. Uppdaterad 2026-10-20.
 
 ## Officiella källor och verifierade förutsättningar
 
-- SCB, Tabell 5.26 (Tema526N): https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__LE__LE0201__LE0201H%C3%A4lsa/Tema526N/
+- SCB, Tabell 5.26 (Tema526N), 2020–2025 (senast uppdaterad 2026-10-15): https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__LE__LE0201__LE0201H%C3%A4lsa/Tema526N/
   - Dödsorsaker för personer **35–84 år** efter utbildningsnivå, kön och år.
   - Måttet är **antal döda per 100 000 av medelfolkmängden**, inte antal dödsfall.
   - Utbildningsnivå enligt SUN; tabellens fotnot uppger att utbildningsnivån baseras på **2019 års uppgifter**.
-  - Historiska värden kan revideras när nya årgångar publiceras.
+  - Källa: Socialstyrelsens dödsorsaksregister, publicerat i SCB Jämställdhet. Historiska värden kan revideras när nya årgångar publiceras.
 - SCB äldre Tabell 5.26 (Tema526): https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__LE__LE0201__LE0201%C3%96/Tema526/
   - Gäller **35–79 år** 2017–2019. Får inte direkt fogas till serien för 35–84 år.
 - Socialstyrelsens dödsorsaksdatabas: https://sdb.socialstyrelsen.se/if_dor/val.aspx
