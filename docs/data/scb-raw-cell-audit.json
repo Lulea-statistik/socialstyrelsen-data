@@ -1,0 +1,22 @@
+{
+  "status": "raw_cell_markers_audited",
+  "tables": {
+    "age": {
+      "expected": 1008,
+      "raw_cells": 1008,
+      "numeric_cells": 848,
+      "non_numeric_cells": 160,
+      "markers": {
+        "..": 160
+      }
+    },
+    "education": {
+      "expected": 324,
+      "raw_cells": 324,
+      "numeric_cells": 324,
+      "non_numeric_cells": 0,
+      "markers": {}
+    }
+  },
+  "interpretation": "Non-numeric symbols are not converted to zero. Consult the official table notes for their meaning."
+}
