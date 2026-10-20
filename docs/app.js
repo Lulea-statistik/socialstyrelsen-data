@@ -290,33 +290,61 @@ for(const id of ['scb-definition-cause','scb-definition-age','scb-definition-sex
 
 let regionalEducation=null;
 const regionalEduColors={'2580':'#991b2b','25':'#c79a22','00':'#2563eb'};
+const regionalEduGroups=[
+ {code:'pre',label:'Förgymnasial utbildning',levels:['1','2']},
+ {code:'gym',label:'Gymnasial utbildning',levels:['3','4']},
+ {code:'post',label:'Eftergymnasial utbildning (inkl. forskarutbildning)',levels:['5','6','7']},
+ {code:'unknown',label:'Uppgift om utbildningsnivå saknas',levels:['US']}
+];
 function renderRegionalEducation(){
  if(!regionalEducation)return;
- const svg=el('regional-education-chart'),legend=el('regional-education-legend');
- svg.replaceChildren();legend.replaceChildren();
- const val=id=>el('regional-education-'+id).value;
- const d=regionalEducation.dimensions;
+ const svg=el('regional-education-chart'),legend=el('regional-education-legend'),summary=el('regional-education-latest'),summaryStatus=el('regional-education-latest-status');
+ svg.replaceChildren();legend.replaceChildren();summary.replaceChildren();
+ const val=id=>el('regional-education-'+id).value,d=regionalEducation.dimensions;
  const label=(dim,code)=>{const i=d[dim].values.indexOf(code);return d[dim].labels[i]||code};
- const selected=regionalEducation.observations.filter(r=>r.sex===val('sex')&&r.age===val('age')&&r.level===val('level'));
- const years=d.year.values,series=['2580','25','00'].map(region=>({
-   region,label:label('region',region),color:regionalEduColors[region],
-   values:selected.filter(r=>r.region===region).sort((a,b)=>String(a.year).localeCompare(String(b.year)))
+ const chosenLevel=val('level');
+ const group=regionalEduGroups.find(x=>x.code===chosenLevel);
+ const levelCodes=group?group.levels:[chosenLevel],levelLabel=group?group.label:label('level',chosenLevel);
+ const years=d.year.values,regions=['2580','25','00'];
+ const matches=regionalEducation.observations.filter(r=>r.sex===val('sex')&&r.age===val('age')&&levelCodes.includes(r.level));
+ const byRegionYear=new Map();
+ for(const r of matches){
+  const key=r.region+'|'+r.year,cell=byRegionYear.get(key)||{region:r.region,year:r.year,share:0,codes:new Set()};
+  if(cell.codes.has(r.level))throw Error('Dubbel utbildningsnivå: '+key+' '+r.level);
+  cell.codes.add(r.level);cell.share+=r.share;byRegionYear.set(key,cell);
+ }
+ const series=regions.map(region=>({
+  region,label:label('region',region),color:regionalEduColors[region],
+  values:years.map(year=>byRegionYear.get(region+'|'+year)).filter(r=>r&&r.codes.size===levelCodes.length)
  }));
- const all=series.flatMap(s=>s.values);
- el('regional-education-status').textContent=label('level',val('level'))+' – '+label('age',val('age'))+', '+label('sex',val('sex'))+'. Andel (%) av motsvarande regionala utbildningspopulation, inte dödstal.';
- if(!all.length){el('regional-education-status').textContent+=' Inga observationer för urvalet.';return}
+ const all=series.flatMap(s=>s.values),latest=years.filter(y=>series.every(s=>s.values.some(v=>v.year===y))).at(-1);
+ el('regional-education-status').textContent=levelLabel+' – '+label('age',val('age'))+', '+label('sex',val('sex'))+'. Andel av samtliga åtta utbildningskategorier (även okänd utbildning). Grupper summeras utan överlappning.';
+ if(!all.length){el('regional-education-status').textContent+=' Inga observationer för urvalet.';summaryStatus.textContent='Ingen gemensam jämförelseperiod.';return}
  const ns='http://www.w3.org/2000/svg',Y=n=>310-n*2.6,X=yr=>70+years.indexOf(String(yr))/(years.length-1||1)*870;
- const node=(tag,props,text)=>{const e=document.createElementNS(ns,tag);Object.entries(props).forEach(([key,value])=>e.setAttribute(key,value));if(text!==undefined)e.textContent=text;svg.append(e);return e};
+ const node=(tag,props,txt)=>{const e=document.createElementNS(ns,tag);Object.entries(props).forEach(([key,value])=>e.setAttribute(key,value));if(txt!==undefined)e.textContent=txt;svg.append(e);return e};
  for(let tick=0;tick<=100;tick+=25){const y=Y(tick);node('line',{x1:70,x2:940,y1:y,y2:y,stroke:'#e4e9ee'});node('text',{x:12,y:y+4},tick+' %')}
  years.forEach((yr,i)=>{if(i%Math.max(1,Math.ceil(years.length/8))===0)node('text',{x:X(yr)-17,y:340},yr)});
  for(const s of series){
-   const legendItem=document.createElement('span');legendItem.textContent='● '+s.label;legendItem.style.color=s.color;legend.append(legendItem);
-   const byYear=new Map(s.values.map(r=>[r.year,r]));
-   let segment=[];
-   const flush=()=>{if(segment.length>1)node('polyline',{points:segment.map(r=>X(r.year)+','+Y(r.share)).join(' '),stroke:s.color,'stroke-width':2.6,fill:'none'});segment=[]};
-   for(const yr of years){const p=byYear.get(yr);if(!p){flush();continue}segment.push(p)}flush();
-   for(const r of s.values){const circle=node('circle',{cx:X(r.year),cy:Y(r.share),r:4,fill:s.color});const tip=document.createElementNS(ns,'title');tip.textContent=s.label+', '+r.year+': '+r.share.toLocaleString('sv-SE',{maximumFractionDigits:2})+' %';circle.append(tip)}
+  const entry=document.createElement('span');entry.textContent='● '+s.label;entry.style.color=s.color;legend.append(entry);
+  const values=new Map(s.values.map(r=>[r.year,r]));let segment=[];
+  const flush=()=>{if(segment.length>1)node('polyline',{points:segment.map(r=>X(r.year)+','+Y(r.share)).join(' '),stroke:s.color,'stroke-width':2.6,fill:'none'});segment=[]};
+  for(const year of years){const r=values.get(year);if(!r){flush();continue}segment.push(r)}flush();
+  for(const r of s.values){const dot=node('circle',{cx:X(r.year),cy:Y(r.share),r:4,fill:s.color});const title=document.createElementNS(ns,'title');title.textContent=s.label+', '+r.year+': '+r.share.toLocaleString('sv-SE',{maximumFractionDigits:2})+' %';dot.append(title)}
  }
+ if(!latest){summaryStatus.textContent='Inget år med fullständiga data för alla tre områdena.';return}
+ const f=v=>v.toLocaleString('sv-SE',{minimumFractionDigits:1,maximumFractionDigits:1});
+ const rows=series.map(s=>({name:s.label,color:s.color,value:s.values.find(r=>r.year===latest).share}));
+ const table=document.createElement('table');
+ const header=document.createElement('thead'),tr=document.createElement('tr');
+ for(const head of ['Område','Andel','Skillnad mot riket']){const th=document.createElement('th');th.textContent=head;tr.append(th)}
+ header.append(tr);table.append(header);
+ const tbody=document.createElement('tbody'),national=rows.find(r=>r.name===label('region','00')).value;
+ for(const r of rows){const tr=document.createElement('tr');
+  for(const value of [r.name,f(r.value)+' %',r.name===label('region','00')?'–':(r.value-national>0?'+':'')+f(r.value-national)+' procentenheter']){
+   const td=document.createElement('td');td.textContent=value;tr.append(td)}
+  tr.firstChild.style.borderLeft='4px solid '+r.color;tbody.append(tr)}
+ table.append(tbody);summary.append(table);
+ summaryStatus.textContent=latest+' · '+levelLabel+' · '+label('age',val('age'))+' · '+label('sex',val('sex'))+'. Skillnader uttrycks i procentenheter, inte procent.';
 }
 async function loadRegionalEducation(){
  if(regionalEducation){renderRegionalEducation();return}
@@ -325,11 +353,13 @@ async function loadRegionalEducation(){
   if(!response.ok)throw Error('SCB:s regionala utbildningsdata har ännu inte byggts. Kör GitHub Actions: Bygg SCB regional utbildning.');
   regionalEducation=await response.json();
   for(const key of ['level','sex','age']){
-    const select=el('regional-education-'+key),dim=regionalEducation.dimensions[key];
-    select.replaceChildren();
-    dim.values.forEach((v,i)=>{if(key==='level'&&v===regionalEducation.education_total_code)return;const option=document.createElement('option');option.value=v;option.textContent=dim.labels[i]||v;select.append(option)});
-    select.addEventListener('change',renderRegionalEducation);
+   const select=el('regional-education-'+key),dim=regionalEducation.dimensions[key];
+   select.replaceChildren();
+   if(key==='level')for(const group of regionalEduGroups){const option=document.createElement('option');option.value=group.code;option.textContent=group.label;select.append(option)}
+   dim.values.forEach((v,i)=>{if(key==='level'&&v===regionalEducation.education_total_code)return;const option=document.createElement('option');option.value=v;option.textContent=dim.labels[i]||v;select.append(option)});
+   select.addEventListener('change',renderRegionalEducation);
   }
+  el('regional-education-level').value='post';
   if(regionalEducation.dimensions.age.values.includes('tot16-74'))el('regional-education-age').value='tot16-74';
   renderRegionalEducation();
  }catch(err){el('regional-education-status').textContent=err.message}
