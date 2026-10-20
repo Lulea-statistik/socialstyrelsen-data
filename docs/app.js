@@ -146,7 +146,39 @@ function calcRisk(){
 el('risk-diagnos').addEventListener('change',renderRisk);
 for(const id of ['risk-deaths','risk-paf'])el(id).addEventListener('input',calcRisk);
 
-document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('explore').hidden=a!=='dodsorsaker';el('maternity').hidden=a!=='fodsel';el('risk-panel').hidden=a!=='risk';if(a==='risk')populateRisk();if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker';let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
+
+let scbEdu=null;
+function renderSCBEducation(){
+ if(!scbEdu)return;
+ const svg=el('scb-education-chart'),legend=el('scb-education-legend');svg.replaceChildren();legend.replaceChildren();
+ const dims=scbEdu.sources.education.dimensions;
+ const dim=pattern=>dims.find(d=>pattern.test(d.text.toLowerCase()))||null;
+ const cause=dim(/dödsorsak/),education=dim(/utbildning/),sex=dim(/kön/),year=dim(/år/);
+ if(![cause,education,sex,year].every(Boolean)){el('scb-education-status').textContent='SCB-kodlistorna har ändrats. Kontrollera tabellens struktur.';return}
+ const lookup=(dimension,value)=>{const i=dimension.values.indexOf(value);return dimension.valueTexts[i]||value};
+ for(const [id,d] of [['scb-education-cause',cause],['scb-education-sex',sex]]){
+  const s=el(id),previous=s.value;if(!s.options.length){for(const v of d.values){const opt=document.createElement('option');opt.value=v;opt.textContent=lookup(d,v);s.append(opt)}}if([...s.options].some(o=>o.value===previous))s.value=previous;
+ }
+ const cc=el('scb-education-cause').value,ss=el('scb-education-sex').value;
+ const rows=scbEdu.observations.filter(r=>r.table==='education'&&r.dimensions[cause.code]===cc&&r.dimensions[sex.code]===ss);
+ const series=education.values.map((v,i)=>({name:lookup(education,v),color:['#991b2b','#d09b22','#2563eb'][i%3],rows:rows.filter(r=>r.dimensions[education.code]===v).map(r=>({year:Number(r.dimensions[year.code]),value:r.value})).filter(r=>Number.isFinite(r.year)).sort((a,b)=>a.year-b.year)}));
+ const values=series.flatMap(s=>s.rows.map(r=>r.value));if(!values.length){el('scb-education-status').textContent='Inga data för detta urval.';return}
+ el('scb-education-status').textContent=lookup(cause,cc)+' – '+lookup(sex,ss)+'. Dödstal per 100 000, 35–84 år (ej verifierat åldersstandardiserade).';
+ const max=Math.max(1,...values)*1.1,years=series.flatMap(s=>s.rows.map(r=>r.year)),lo=Math.min(...years),hi=Math.max(...years),ns='http://www.w3.org/2000/svg',X=x=>70+(x-lo)/(hi-lo||1)*860,Y=y=>310-y/max*260;
+ function n(tag,attrs,label){const item=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))item.setAttribute(k,v);if(label!==undefined)item.textContent=label;svg.append(item);return item}
+ for(let i=0;i<=4;i++){const y=310-i*260/4;n('line',{x1:70,y1:y,x2:935,y2:y,stroke:'#e5e7eb'});n('text',{x:5,y:y+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(i*max/4))}
+ for(let yr=lo;yr<=hi;yr++)n('text',{x:X(yr)-15,y:342},yr);
+ for(const s of series){if(!s.rows.length)continue;n('polyline',{points:s.rows.map(r=>X(r.year)+','+Y(r.value)).join(' '),fill:'none',stroke:s.color,'stroke-width':3});const label=document.createElement('span');label.textContent='● '+s.name+'  ';label.style.color=s.color;legend.append(label);
+  for(const r of s.rows){const point=n('circle',{cx:X(r.year),cy:Y(r.value),r:4,fill:s.color});const title=document.createElementNS(ns,'title');title.textContent=s.name+' '+r.year+': '+r.value.toLocaleString('sv-SE');point.append(title)}}
+}
+async function loadSCBEducation(){
+ if(scbEdu){renderSCBEducation();return}
+ try{const r=await fetch('data/scb-mortality-education.json');if(!r.ok)throw Error('SCB-filen är ännu inte genererad. Kör GitHub-arbetsflödet.');scbEdu=await r.json();renderSCBEducation()}
+ catch(e){el('scb-education-status').textContent=e.message}
+}
+for(const id of ['scb-education-cause','scb-education-sex'])el(id).addEventListener('change',renderSCBEducation);
+
+document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('explore').hidden=a!=='dodsorsaker';el('maternity').hidden=a!=='fodsel';el('risk-panel').hidden=a!=='risk';el('scb-education-panel').hidden=a!=='education';if(a==='education')loadSCBEducation();if(a==='risk')populateRisk();if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker';let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
 el('csv').addEventListener('click',()=>{const txt='År;Värde\n'+shown.map(r=>r[1]+';'+String(r[6]).replace('.',',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='socialstyrelsen-urval.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
 
 let bmiData=null;
