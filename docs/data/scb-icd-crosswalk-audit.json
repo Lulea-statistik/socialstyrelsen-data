@@ -1,0 +1,168 @@
+{
+  "status": "candidate_crosswalk_not_approved_for_aggregation",
+  "principle": "No ICD aggregation without checked SCB official cause inclusion rules, age coverage, sex and rate denominator.",
+  "groups": [
+    {
+      "scb_code": "tot",
+      "label": "totalt",
+      "candidate_socialstyrelsen_codes": [
+        "99"
+      ],
+      "code_presence": {
+        "99": true
+      },
+      "socialstyrelsen_labels": {
+        "99": "Samtliga dödsorsaker"
+      },
+      "validation_status": "candidate_exact_total",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "tot2",
+      "label": "totalt 35–84 år",
+      "candidate_socialstyrelsen_codes": [
+        "99"
+      ],
+      "code_presence": {
+        "99": true
+      },
+      "socialstyrelsen_labels": {
+        "99": "Samtliga dödsorsaker"
+      },
+      "validation_status": "candidate_age_restricted",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "and",
+      "label": "andningsorganens sjukdomar",
+      "candidate_socialstyrelsen_codes": [
+        "J00-J99"
+      ],
+      "code_presence": {
+        "J00-J99": true
+      },
+      "socialstyrelsen_labels": {
+        "J00-J99": "Andningsorganens sjukdomar"
+      },
+      "validation_status": "candidate_icd_chapter",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "hjärt",
+      "label": "hjärt-kärlsjukdomar",
+      "candidate_socialstyrelsen_codes": [
+        "I00-I99"
+      ],
+      "code_presence": {
+        "I00-I99": true
+      },
+      "socialstyrelsen_labels": {
+        "I00-I99": "Cirkulationsorganens sjukdomar"
+      },
+      "validation_status": "candidate_icd_chapter",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "tum",
+      "label": "tumörer",
+      "candidate_socialstyrelsen_codes": [
+        "C00-D48"
+      ],
+      "code_presence": {
+        "C00-D48": true
+      },
+      "socialstyrelsen_labels": {
+        "C00-D48": "Tumörer"
+      },
+      "validation_status": "candidate_icd_chapter",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "alk",
+      "label": "alkoholrelaterad dödlighet",
+      "candidate_socialstyrelsen_codes": [
+        "Alk"
+      ],
+      "code_presence": {
+        "Alk": true
+      },
+      "socialstyrelsen_labels": {
+        "Alk": "Alkoholrelaterad dödlighet"
+      },
+      "validation_status": "definition_review_required",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "daalk",
+      "label": "därav alkoholrelaterad dödlighet",
+      "candidate_socialstyrelsen_codes": [
+        "Alk"
+      ],
+      "code_presence": {
+        "Alk": true
+      },
+      "socialstyrelsen_labels": {
+        "Alk": "Alkoholrelaterad dödlighet"
+      },
+      "validation_status": "definition_review_required",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "dacov",
+      "label": "därav Covid-19",
+      "candidate_socialstyrelsen_codes": [
+        "U07"
+      ],
+      "code_presence": {
+        "U07": true
+      },
+      "socialstyrelsen_labels": {
+        "U07": "Covid-19 (virus påvisat och virus ej påvisat)"
+      },
+      "validation_status": "definition_review_required",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "sjalv",
+      "label": "självmord och skadehändelse med oklar avsikt",
+      "candidate_socialstyrelsen_codes": [
+        "X60-X84",
+        "Y10-Y34"
+      ],
+      "code_presence": {
+        "X60-X84": true,
+        "Y10-Y34": true
+      },
+      "socialstyrelsen_labels": {
+        "X60-X84": "Avsiktligt självdestruktiv handling",
+        "Y10-Y34": "Skadehändelser med oklar avsikt"
+      },
+      "validation_status": "compound_definition_review_required",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "skad",
+      "label": "skador och förgiftningar, exkl. oklar avsikt",
+      "candidate_socialstyrelsen_codes": [
+        "V01-Y98"
+      ],
+      "code_presence": {
+        "V01-Y98": true
+      },
+      "socialstyrelsen_labels": {
+        "V01-Y98": "Yttre orsaker till sjukdom och död"
+      },
+      "validation_status": "compound_definition_review_required",
+      "approved_for_aggregation": false
+    },
+    {
+      "scb_code": "övr",
+      "label": "övrigt",
+      "candidate_socialstyrelsen_codes": [],
+      "code_presence": {},
+      "socialstyrelsen_labels": {},
+      "validation_status": "residual_definition_review_required",
+      "approved_for_aggregation": false
+    }
+  ]
+}
