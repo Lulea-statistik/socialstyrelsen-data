@@ -15,10 +15,11 @@ jobs:
       - run: python -m py_compile scripts/build_scb_regional_education.py
       - run: python scripts/build_scb_regional_education.py
       - run: python -m json.tool docs/data/scb-regional-education.json > /dev/null
+      - run: python scripts/audit_scb_regional_education.py
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/scb-regional-education.json
+          git add docs/data/scb-regional-education.json docs/data/scb-regional-education-audit.json
           if ! git diff --cached --quiet; then
             git commit -m "Uppdatera SCB regional utbildningsstatistik"
             git pull --rebase origin main
