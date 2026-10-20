@@ -38,26 +38,27 @@ def request(url, payload=None):
 
 def main():
     metadata, url = None, None
-    errors = []
-    # Discover the proper API tree first, rather than assuming the browser path is valid.
-    for root in ["https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/",
-                 "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/A_Folkhalsodata"]:
-        try:
-            listing = request(root)
-            print("FHM API catalogue", root, str(listing)[:1500], flush=True)
-        except Exception as exc:
-            print("FHM API catalogue failed", root, str(exc)[:700], flush=True)
-    for candidate in API_CANDIDATES:
-        try:
-            obj = request(candidate)
-            if isinstance(obj, dict) and isinstance(obj.get("variables"), list):
-                metadata, url = obj, candidate
-                break
-            errors.append(candidate + ": no PxWeb variables array")
-        except Exception as exc:
-            errors.append(candidate + ": " + str(exc))
-    if metadata is None:
-        raise RuntimeError("Could not establish FHM PxWeb v1 metadata URL; check API link in PxWeb interface: " + " | ".join(errors))
+    root = "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/A_Folkhalsodata"
+    # PxWeb browser directory IDs contain db prefixes and '__' delimiters.
+    # The API requires the actual catalogue IDs discovered at each level.
+    path = []
+    for wanted in ["Z_ovrigdata", "HLVkn", "Hals", "vikt"]:
+        parent_url = root + ("/" + "/".join(path) if path else "")
+        listing = request(parent_url)
+        if not isinstance(listing, list):
+            raise ValueError("Expected API catalogue at " + parent_url)
+        print("Catalogue", parent_url, [(x.get("id"), x.get("type")) for x in listing][:80], flush=True)
+        candidates = [item for item in listing if item.get("id", "").casefold().removesuffix(".px") == wanted.casefold()]
+        if not candidates:
+            raise ValueError("Catalogue segment " + wanted + " not found at " + parent_url +
+                             "; available: " + str([(x.get("id"), x.get("text")) for x in listing][:60]))
+        item = candidates[0]
+        path.append(item["id"])
+        print("Selected", wanted, "->", item["id"], "type", item.get("type"), flush=True)
+    url = root + "/" + "/".join(path)
+    metadata = request(url)
+    if not isinstance(metadata, dict) or not isinstance(metadata.get("variables"), list):
+        raise ValueError("BMI table did not return PxWeb variables: " + url)
     variables = metadata["variables"]
     for dim in variables:
         if len(dim["values"]) != len(dim["valueTexts"]):
