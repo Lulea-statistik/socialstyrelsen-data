@@ -192,4 +192,35 @@ async function loadBMI(){
 }
 for(const id of ['bmi-threshold','bmi-scb-age','bmi-mfr-age'])el(id).addEventListener('change',renderBMI);
 
-start();fetchAges();loadVerifiedGBD();loadBMI();
+
+async function loadBMIFertilityCorrelations(){
+ const result=el('bmi-correlation-results'),svg=el('bmi-fertility-scatter');
+ try{
+  const response=await fetch('data/bmi-fertility-exploratory.json');if(!response.ok)throw Error('Analysfilen har ännu inte publicerats.');
+  const d=await response.json(),fmt=v=>v===null?'Ej beräkningsbart':new Intl.NumberFormat('sv-SE',{maximumFractionDigits:3}).format(v);
+  result.replaceChildren();
+  for(const [key,title] of [['overweight_or_obesity','BMI ≥25'],['obesity','BMI ≥30']]){
+   const s=d.correlations[key],p=document.createElement('p');
+   p.textContent=title+': '+s.n_periods+' perioder; korrelation mellan nivåer r = '+fmt(s.r_levels)+'; mellan periodförändringar r = '+fmt(s.r_consecutive_differences)+'.';
+   result.append(p);
+  }
+  const rows=d.series.overweight_or_obesity;
+  if(!rows?.length)return;
+  const xs=rows.map(r=>r.bmi_pct),ys=rows.map(r=>r.births_per_1000),xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys),ns='http://www.w3.org/2000/svg';
+  const X=v=>75+(v-xmin)/(xmax-xmin||1)*860,Y=v=>310-(v-ymin)/(ymax-ymin||1)*250;
+  svg.replaceChildren();
+  function node(tag,attrs,label){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);if(label!==undefined)n.textContent=label;svg.append(n);return n}
+  for(let i=0;i<=4;i++){
+   const y=310-i*250/4;node('line',{x1:75,y1:y,x2:940,y2:y,stroke:'#e5e7eb'});
+   node('text',{x:7,y:y+4},(ymin+(ymax-ymin)*i/4).toFixed(1).replace('.',','));
+   node('text',{x:75+i*860/4-13,y:340},(xmin+(xmax-xmin)*i/4).toFixed(1).replace('.',','));
+  }
+  for(const r of rows){
+   const dot=node('circle',{cx:X(r.bmi_pct),cy:Y(r.births_per_1000),r:5,fill:'#991b2b'});
+   const title=document.createElementNS(ns,'title');title.textContent=r.period+': BMI ≥25 '+r.bmi_pct.toFixed(1).replace('.',',')+' %; födda per 1 000 kvinnor '+r.births_per_1000.toFixed(1).replace('.',',');dot.append(title);
+  }
+  node('text',{x:340,y:365},'Andel kvinnor med BMI ≥25 (%)');
+ }catch(e){result.textContent='Kunde inte ladda korrelationerna: '+e.message}
+}
+
+start();fetchAges();loadVerifiedGBD();loadBMI();loadBMIFertilityCorrelations();
