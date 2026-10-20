@@ -49,17 +49,18 @@ def main():
     print("SCB metadata dimensions:",[(d["code"],d["text"],len(d["values"])) for d in dims],flush=True)
     print("SCB response columns:",response.get("columns"),flush=True)
     print("SCB sample row:",response["data"][0] if response.get("data") else None,flush=True)
-    cols=[c["code"] for c in response["columns"]]
+    dimensions_columns=[col for col in response["columns"] if col.get("type")!="c"]
+    content_columns=[col for col in response["columns"] if col.get("type")=="c"]
+    if len(content_columns)!=1 or content_columns[0]["text"].casefold()!="antal":
+        raise ValueError("Expected one count measure, got "+str(content_columns))
+    cols=[col["code"] for col in dimensions_columns]
     records=[]
     for row in response["data"]:
-        if len(cols)==len(row["key"])+1 and "ContentsCode" in cols:
-            codes=[x for x in cols if x!="ContentsCode"]
-        elif len(cols)==len(row["key"]):
-            codes=cols
-        else:
-            raise ValueError("Unrecognized PxWeb dimension keys/columns: %s/%s" % (len(row["key"]),len(cols)))
+        if len(cols)!=len(row["key"]):
+            raise ValueError("Expected %s dimensional keys, got %s" % (len(cols),len(row["key"])))
         if len(row["values"])!=1:
-            raise ValueError("Expected exactly one selected measure; got %s. Review metadata and content selection." % len(row["values"]))
+            raise ValueError("Expected exactly one count per cell, got %s" % len(row["values"]))
+        codes=cols
         val=row["values"][0]
         try:n=float(str(val).replace(",","."))
         except (ValueError,TypeError):n=None
