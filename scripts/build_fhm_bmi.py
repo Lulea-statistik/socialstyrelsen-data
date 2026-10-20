@@ -90,7 +90,7 @@ def main():
     observations = []
     for row in data["data"]:
         if len(row["key"]) != len(dimensions_codes):
-            raise ValueError(f"PxWeb dimension keys {len(row[\x27key\x27])} vs dimension columns {len(dimensions_codes)}")
+            raise ValueError("PxWeb dimension key count %d vs dimension columns %d" % (len(row["key"]), len(dimensions_codes)))
         if len(row["values"]) != len(measure["values"]):
             raise ValueError("PxWeb value count differs from available ContentsCode measures")
         for index, original in enumerate(row["values"]):
