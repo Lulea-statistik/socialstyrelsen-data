@@ -1,7 +1,7 @@
 """Build comparable regional education shares using SCB UF0506 PxWeb metadata.
 
-Do not derive percentages unless an explicit total-education code is available
-for exactly the same region, year, sex and age. No mortality denominator join.
+Compute shares only from a complete disjoint education partition for the
+same region, year, sex and age. No mortality denominator join.
 """
 import json, urllib.request, time
 from pathlib import Path
@@ -33,10 +33,12 @@ def main():
     if not all([region,sex,age,level,year]):raise ValueError("Required dimensions absent: "+str([(d["code"],d["text"]) for d in dims]))
     regional=[v for v in ("2580","25","00") if v in region["values"]]
     if len(regional)!=3:raise ValueError("Region coverage incomplete, codes: "+str(regional))
-    # Total must be an explicit source value, not an inferred sum of possibly overlapping classes.
-    total_candidates=[v for v,t in zip(level["values"],level["valueTexts"]) if ("samtliga" in t.casefold() or "totalt" in t.casefold() or t.casefold().strip()=="alla utbildningsnivåer")]
-    if len(total_candidates)!=1:raise ValueError("Cannot identify unique explicit education total: "+str(list(zip(level["values"],level["valueTexts"]))))
-    total_code=total_candidates[0]
+    # SCB publishes categories 1..7 and US (unknown), without a total row.
+    # They are disjoint categories; include unknowns in the denominator.
+    education_codes=set(level["values"])
+    if education_codes != set("1234567")|{"US"}:
+        raise ValueError("Unexpected education partition: "+str(sorted(education_codes)))
+    total_code=None
     query=[]
     for d in dims:
         if d["code"]==region["code"]:values=regional
@@ -52,17 +54,31 @@ def main():
         try:n=float(str(val).replace(",","."))
         except (ValueError,TypeError):n=None
         records.append({"dimensions":dict(zip(cols,row["key"])),"value":n,"raw":val})
-    lookup={(r["dimensions"][region["code"]],r["dimensions"][sex["code"]],r["dimensions"][age["code"]],r["dimensions"][year["code"]],r["dimensions"][level["code"]]):r["value"] for r in records}
+    from collections import defaultdict
+    grouped=defaultdict(dict)
+    for row in records:
+        d=row["dimensions"]
+        key=(d[region["code"]],d[sex["code"]],d[age["code"]],d[year["code"]])
+        level_code=d[level["code"]]
+        if level_code in grouped[key]:
+            raise ValueError("Duplicate education cell: "+str((key,level_code)))
+        grouped[key][level_code]=row["value"]
     output=[]
-    for r in records:
-        d=r["dimensions"];level_code=d[level["code"]]
-        den=lookup.get((d[region["code"]],d[sex["code"]],d[age["code"]],d[year["code"]],total_code))
-        if level_code==total_code or not isinstance(den,(int,float)) or den<=0 or not isinstance(r["value"],(int,float)):continue
-        pct=100*r["value"]/den
-        if not (0<=pct<=100):continue
-        output.append({"region":d[region["code"]],"sex":d[sex["code"]],"age":d[age["code"]],"year":d[year["code"]],"level":level_code,"share":round(pct,5)})
+    excluded=0
+    for (region_code,sex_code,age_code,year_code),cells in grouped.items():
+        if set(cells)!=education_codes or any(not isinstance(v,(int,float)) or not (v>=0) for v in cells.values()):
+            excluded+=1
+            continue
+        denominator=sum(cells.values())
+        if denominator<=0:
+            excluded+=1
+            continue
+        for level_code in level["values"]:
+            value=cells[level_code]
+            output.append({"region":region_code,"sex":sex_code,"age":age_code,"year":year_code,"level":level_code,"share":round(100*value/denominator,5)})
+    print("Complete education partitions:",len(grouped)-excluded,"excluded:",excluded,flush=True)
     if not output:raise ValueError("No reliable regional education shares calculated")
-    result={"status":"regional_education_shares_from_explicit_total","source":url,"title":metadata.get("title"),"dimensions":{k:{"values":v["values"],"labels":v["valueTexts"]} for k,v in [("region",region),("sex",sex),("age",age),("level",level),("year",year)]},"education_total_code":total_code,"observations":output,"caveats":["Regional shares within source age/sex/year populations; not mortality risk.","Do not interpret as medelfolkmangd or the fixed 2019 education frame of Tema526N."]}
+    result={"status":"regional_education_shares_from_complete_partition","source":url,"title":metadata.get("title"),"dimensions":{k:{"values":v["values"],"labels":v["valueTexts"]} for k,v in [("region",region),("sex",sex),("age",age),("level",level),("year",year)]},"education_total_code":total_code,"denominator_definition":"Sum of all 8 disjoint levels 1-7 and US, with US included","excluded_incomplete_partitions":excluded,"observations":output,"caveats":["Regional shares within source age/sex/year populations; not mortality risk.","Do not interpret as medelfolkmangd or the fixed 2019 education frame of Tema526N."]}
     p=Path("docs/data/scb-regional-education.json");p.parent.mkdir(parents=True,exist_ok=True)
     p.write_text(json.dumps(result,ensure_ascii=False,separators=(",",":")),encoding="utf-8")
     print("Saved",len(output),"regional shares to",p)
