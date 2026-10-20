@@ -39,7 +39,7 @@ function drawRegions(){
  const max=Math.max(1,...vals),lo=Math.min(...lines.flatMap(l=>l.rows.map(r=>r[1]))),hi=Math.max(...lines.flatMap(l=>l.rows.map(r=>r[1])));
  const X=t=>65+(t-lo)/(hi-lo||1)*895,Y=v=>315-v/max*275;
  function node(tag,attrs,text){const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;svg.append(n);return n}
- for(let i=0;i<=4;i++){const yy=315-i*275/4;node('line',{x1:65,y1:yy,x2:965,y2:yy,stroke:'#e6e9ef'});node('text',{x:6,y:yy+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(min+span*i/4))}
+ for(let i=0;i<=4;i++){const yy=315-i*275/4;node('line',{x1:65,y1:yy,x2:965,y2:yy,stroke:'#e6e9ef'});node('text',{x:6,y:yy+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(max*i/4))}
  for(let yr=lo;yr<=hi;yr+=Math.max(1,Math.ceil((hi-lo)/7)))node('text',{x:X(yr)-14,y:346},yr);
  lines.forEach((l,i)=>{const color=palette[i%palette.length];node('polyline',{points:l.rows.map(r=>X(r[1])+','+Y(r[6])).join(' '),fill:'none',stroke:color,'stroke-width':2,opacity:.88});const span=document.createElement('span');span.textContent='● '+metaLabel('region',l.code);span.style.color=color;legend.append(span);for(const r of l.rows){const dot=node('circle',{cx:X(r[1]),cy:Y(r[6]),r:3,fill:color,tabindex:0});const title=document.createElementNS(ns,'title');title.textContent=metaLabel('region',l.code)+' '+r[1]+': '+r[6];dot.append(title)}})
 }
@@ -55,7 +55,7 @@ function chartCompare(chartId,legendId,lines){
  if(!vals.length){const t=document.createElementNS(ns,'text');t.setAttribute('x',60);t.setAttribute('y',160);t.textContent='Ingen tillgänglig statistik för detta urval';svg.append(t);return}
  const max=Math.max(...vals),min=chartId==='sex-chart'?Math.min(...vals):Math.min(0,...vals),span=max-min||1,all=lines.flatMap(l=>l.rows.map(r=>r[1])),lo=Math.min(...all),hi=Math.max(...all),X=t=>65+(t-lo)/(hi-lo||1)*890,Y=v=>315-(v-min)/span*275;
  function node(tag,attrs,label){const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(label!==undefined)n.textContent=label;svg.append(n);return n}
- for(let i=0;i<=4;i++){const y=315-i*275/4;node('line',{x1:65,y1:y,x2:955,y2:y,stroke:'#e5e7eb'});node('text',{x:5,y:y+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(max*i/4))}
+ for(let i=0;i<=4;i++){const y=315-i*275/4;node('line',{x1:65,y1:y,x2:955,y2:y,stroke:'#e5e7eb'});node('text',{x:5,y:y+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(min+span*i/4))}
  for(let yr=lo;yr<=hi;yr+=Math.max(1,Math.ceil((hi-lo)/7)))node('text',{x:X(yr)-15,y:346},yr);
  lines.forEach((l,i)=>{if(!l.rows.length)return;const color=palette[i%palette.length];node('polyline',{points:l.rows.map(r=>X(r[1])+','+Y(r[6])).join(' '),fill:'none',stroke:color,'stroke-width':2.3});const span=document.createElement('span');span.textContent='● '+l.label;span.style.color=color;legend.append(span);for(const r of l.rows){const dot=node('circle',{cx:X(r[1]),cy:Y(r[6]),r:3.5,fill:color,tabindex:0});const title=document.createElementNS(ns,'title');title.textContent=l.label+' – '+r[1]+': '+new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(r[6]);dot.append(title)}})
 }
@@ -148,4 +148,48 @@ for(const id of ['risk-deaths','risk-paf'])el(id).addEventListener('input',calcR
 
 document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('explore').hidden=a!=='dodsorsaker';el('maternity').hidden=a!=='fodsel';el('risk-panel').hidden=a!=='risk';if(a==='risk')populateRisk();if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker';let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
 el('csv').addEventListener('click',()=>{const txt='År;Värde\n'+shown.map(r=>r[1]+';'+String(r[6]).replace('.',',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='socialstyrelsen-urval.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
-start();fetchAges();loadVerifiedGBD();
+
+let bmiData=null;
+const bmiCodes={25:['övervikt (BMI mellan 25,0 och 29,9)','obesitas (BMI är 30,0 eller mer)'],30:['obesitas (BMI är 30,0 eller mer)']};
+function renderBMI(){
+ const svg=el('bmi-trend-chart');svg.replaceChildren();
+ if(!bmiData)return;
+ const threshold=el('bmi-threshold').value,scbAge=el('bmi-scb-age').value,mfrAge=el('bmi-mfr-age').value;
+ const scb=new Map(),mfr=new Map();
+ for(const r of bmiData.scb){
+  if(r.age!==scbAge||r.measure!=='Body Mass Index (BMI)'||!bmiCodes[threshold].includes(r.bmi))continue;
+  const v=scb.get(r.period)||{sum:0,n:0};
+  v.sum+=r.value;v.n++;scb.set(r.period,v);
+ }
+ for(const r of bmiData.socialstyrelsen){
+  if(r.age!==mfrAge||r.measure!=='Procent')continue;
+  if((threshold==='25'&&['25 ≤ BMI < 30','BMI ≥ 30'].includes(r.bmi))||(threshold==='30'&&r.bmi==='BMI ≥ 30')){
+   const v=mfr.get(r.year)||{sum:0,n:0};v.sum+=r.value;v.n++;mfr.set(r.year,v);
+  }
+ }
+ const scbRows=[...scb].filter(([k,v])=>v.n===bmiCodes[threshold].length).map(([period,v])=>{const m=period.match(/^(\d{4})-(\d{4})$/);return m?{year:(+m[1]+ +m[2])/2,value:v.sum,label:period}:null}).filter(Boolean).sort((a,b)=>a.year-b.year);
+ const socRows=[...mfr].filter(([k,v])=>v.n===(threshold==='25'?2:1)).map(([year,v])=>({year:+year,value:v.sum,label:String(year)})).sort((a,b)=>a.year-b.year);
+ const lines=[{name:'SCB ULF, kvinnor '+scbAge,rows:scbRows,color:'#991b2b'},{name:'Socialstyrelsen MFR, '+mfrAge,rows:socRows,color:'#2563eb'}];
+ const all=lines.flatMap(x=>x.rows),ns='http://www.w3.org/2000/svg';
+ const status=el('bmi-load'),details=el('bmi-details');
+ if(!all.length){status.textContent='Inga jämförbara uppgifter för urvalet.';details.textContent='';return}
+ status.textContent='SCB: '+scbRows.length+' perioder; Socialstyrelsen: '+socRows.length+' år. Diagrammet visar separata serier med olika målpopulationer.';
+ const minYear=Math.min(...all.map(x=>x.year)),maxYear=Math.max(...all.map(x=>x.year)), ymax=Math.max(10,...all.map(x=>x.value))*1.1;
+ const X=yr=>65+(yr-minYear)/(maxYear-minYear||1)*885,Y=v=>315-v/ymax*265;
+ function node(tag,attrs,label){const n=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));if(label!==undefined)n.textContent=label;svg.append(n);return n}
+ for(let i=0;i<=4;i++){const y=315-i*265/4;node('line',{x1:65,y1:y,x2:950,y2:y,stroke:'#e5e7eb'});node('text',{x:10,y:y+4},(ymax*i/4).toFixed(1).replace('.',',')+' %')}
+ for(let yr=Math.ceil(minYear/5)*5;yr<=maxYear;yr+=5)node('text',{x:X(yr)-16,y:345},String(yr));
+ for(const line of lines){
+  const rows=line.rows;if(!rows.length)continue;
+  node('polyline',{points:rows.map(r=>X(r.year)+','+Y(r.value)).join(' '),fill:'none',stroke:line.color,'stroke-width':2.7});
+  for(const r of rows){const dot=node('circle',{cx:X(r.year),cy:Y(r.value),r:4,fill:line.color});const t=document.createElementNS(ns,'title');t.textContent=line.name+' '+r.label+': '+r.value.toFixed(1).replace('.',',')+' %';dot.append(t)}
+ }
+ details.textContent='Röd: '+lines[0].name+'. Blå: '+lines[1].name+'. BMI ≥'+threshold+'. Urvalens nivåskillnad är deskriptiv, inte en beräknad fertilitetskorrelation.';
+}
+async function loadBMI(){
+ try{const response=await fetch('data/bmi-comparison.json');if(!response.ok)throw Error('BMI-jämförelsefil saknas');bmiData=await response.json();renderBMI()}
+ catch(e){el('bmi-load').textContent=e.message}
+}
+for(const id of ['bmi-threshold','bmi-scb-age','bmi-mfr-age'])el(id).addEventListener('change',renderBMI);
+
+start();fetchAges();loadVerifiedGBD();loadBMI();
