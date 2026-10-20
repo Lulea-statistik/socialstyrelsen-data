@@ -326,4 +326,58 @@ async function loadBMIFertilityCorrelations(){
  }catch(e){result.textContent='Kunde inte ladda korrelationerna: '+e.message}
 }
 
-start();fetchAges();loadVerifiedGBD();loadBMI();loadBMIFertilityCorrelations();
+
+let fhmBMI=null;
+function fhmDimension(pattern){return fhmBMI?.variables.find(v=>pattern.test((v.text+' '+v.code).toLocaleLowerCase('sv-SE')))}
+function fhmOptions(id,dim){
+ const select=el(id);select.replaceChildren();
+ if(!dim)return;
+ dim.values.forEach((value,i)=>{const o=document.createElement('option');o.value=value;o.textContent=dim.valueTexts[i]||value;select.append(o)});
+ const regionDefault=id==='fhm-bmi-region'?['2580','25','00'].find(x=>dim.values.includes(x)):null;
+ if(regionDefault)select.value=regionDefault;
+}
+function fhmBMIPlot(){
+ if(!fhmBMI)return;
+ const svg=el('fhm-bmi-chart');svg.replaceChildren();
+ const area=fhmDimension(/region/),klass=fhmDimension(/viktstatus|bmi/),sex=fhmDimension(/kön|^kon$/),year=fhmDimension(/år|tid/),measure=fhmDimension(/andel och konfidensintervall|tabellinnehåll|contents/);
+ if(!area||!klass||!sex||!year||!measure){
+  el('fhm-bmi-status').textContent='Tabellens dimensioner behöver kontrolleras: '+fhmBMI.variables.map(v=>v.code).join(', ');
+  return;
+ }
+ const selections=[[area,el('fhm-bmi-region').value],[klass,el('fhm-bmi-class').value],[sex,el('fhm-bmi-sex').value]];
+ const records=fhmBMI.observations.filter(r=>selections.every(([d,v])=>r.dimensions[d.code]===v)&&Number.isFinite(r.value));
+ const measurements=measure.values.map((code,i)=>({code,label:measure.valueTexts[i]||code}));
+ const findType=(regex)=>measurements.find(x=>regex.test(x.label.toLocaleLowerCase('sv-SE')));
+ const central=findType(/^andel$|^andel \(|^andel \(%|^procent$|^skattning$/)||measurements.find(x=>/andel|procent/.test(x.label.toLocaleLowerCase('sv-SE'))&&!/nedre|övre|konfidens|felmarginal/.test(x.label.toLocaleLowerCase('sv-SE')));
+ if(!central){el('fhm-bmi-status').textContent='Mått för andel kunde inte identifieras i metadata: '+measurements.map(x=>x.label).join(', ');return}
+ const low=findType(/nedre/),high=findType(/övre/);
+ const label=(d,v)=>d.valueTexts[d.values.indexOf(v)]||v;
+ const periods=year.values.map(v=>({code:v,match:v.match(/(\d{4})\D+(\d{4})/)})).filter(v=>v.match);
+ const selected=(p,code)=>records.find(r=>r.dimensions[year.code]===p&&r.dimensions[measure.code]===code)?.value;
+ const points=periods.map(p=>({period:p.code,x:(Number(p.match[1])+Number(p.match[2]))/2,value:selected(p.code,central.code),low:low?selected(p.code,low.code):null,high:high?selected(p.code,high.code):null})).filter(p=>Number.isFinite(p.value));
+ el('fhm-bmi-status').textContent=label(area,el('fhm-bmi-region').value)+' – '+label(klass,el('fhm-bmi-class').value)+', '+label(sex,el('fhm-bmi-sex').value)+'. '+points.length+' periodvärden, andel (%).'+(low&&high?' Konfidensintervall visas när kompletta.':' Konfidensgränser ej identifierade i källans måttetiketter.');
+ if(!points.length)return;
+ const ns='http://www.w3.org/2000/svg',X=x=>70+(x-Math.min(...points.map(p=>p.x)))/(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x))||1)*860,Y=v=>310-v/100*260;
+ function node(tag,a,txt){const n=document.createElementNS(ns,tag);Object.entries(a).forEach(([k,v])=>n.setAttribute(k,v));if(txt!==undefined)n.textContent=txt;svg.append(n);return n}
+ for(let i=0;i<=4;i++){let v=25*i,y=Y(v);node('line',{x1:70,y1:y,x2:940,y2:y,stroke:'#e4e9ee'});node('text',{x:10,y:y+4},v+' %')}
+ const ordered=points.slice().sort((a,b)=>a.x-b.x);
+ if(ordered.length>1)node('polyline',{points:ordered.map(p=>X(p.x)+','+Y(p.value)).join(' '),fill:'none',stroke:'#2563eb','stroke-width':2.5});
+ for(const p of ordered){
+  if(Number.isFinite(p.low)&&Number.isFinite(p.high)&&p.low<=p.value&&p.high>=p.value){node('line',{x1:X(p.x),x2:X(p.x),y1:Y(p.low),y2:Y(p.high),stroke:'#2563eb','stroke-width':1.5})}
+  const circ=node('circle',{cx:X(p.x),cy:Y(p.value),r:5,fill:'#2563eb'}),title=document.createElementNS(ns,'title');
+  title.textContent=p.period+': '+p.value.toLocaleString('sv-SE')+' %'+(Number.isFinite(p.low)&&Number.isFinite(p.high)?' (KI '+p.low+'–'+p.high+' %)':'');circ.append(title);
+  node('text',{x:X(p.x)-25,y:338},p.period.slice(2));
+ }
+}
+async function loadFHMBMI(){
+ try{
+  const response=await fetch('data/fhm-bmi.json');
+  if(!response.ok)throw Error('FHM-data ännu inte importerade. Kör GitHub Actions: Bygg FHM BMI-jämförelse.');
+  fhmBMI=await response.json();
+  const dims=[['fhm-bmi-region',/region/],['fhm-bmi-class',/viktstatus|bmi/],['fhm-bmi-sex',/kön|^kon$/]];
+  for(const [id,pattern] of dims){fhmOptions(id,fhmDimension(pattern));el(id).addEventListener('change',fhmBMIPlot)}
+  fhmBMIPlot();
+ }catch(e){el('fhm-bmi-status').textContent=e.message}
+}
+
+start();fetchAges();loadVerifiedGBD();loadBMI();loadBMIFertilityCorrelations();loadFHMBMI();
