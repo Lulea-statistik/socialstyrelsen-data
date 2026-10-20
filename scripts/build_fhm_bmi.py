@@ -6,12 +6,14 @@ Keep dimensions/measure metadata and raw cell markers; never infer a pooled seri
 import json
 import time
 import urllib.request
+import urllib.error
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TABLE_PATH = "A_Folkhalsodata/A_Folkhalsodata__Z_ovrigdata__HLVkn__Hals/vikt.px"
 API_CANDIDATES = [
     "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/" + TABLE_PATH,
+    "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/A_Folkhalsodata__Z_ovrigdata__HLVkn__Hals/vikt.px",
     "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/" + TABLE_PATH.removesuffix(".px"),
     "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/" + TABLE_PATH + "/",
     "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/pxweb/api/v1/sv/" + TABLE_PATH,
@@ -26,6 +28,9 @@ def request(url, payload=None):
             })
             with urllib.request.urlopen(req, timeout=50) as response:
                 return json.load(response)
+        except urllib.error.HTTPError as exc:
+            body = exc.read(1500).decode('utf-8', 'replace')
+            raise RuntimeError(f'HTTP {exc.code} at {url}: {body[:600]}') from exc
         except Exception:
             if retry == 2:
                 raise
@@ -34,6 +39,14 @@ def request(url, payload=None):
 def main():
     metadata, url = None, None
     errors = []
+    # Discover the proper API tree first, rather than assuming the browser path is valid.
+    for root in ["https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/",
+                 "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/A_Folkhalsodata"]:
+        try:
+            listing = request(root)
+            print("FHM API catalogue", root, str(listing)[:1500], flush=True)
+        except Exception as exc:
+            print("FHM API catalogue failed", root, str(exc)[:700], flush=True)
     for candidate in API_CANDIDATES:
         try:
             obj = request(candidate)
