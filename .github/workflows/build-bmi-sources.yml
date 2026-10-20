@@ -14,10 +14,11 @@ jobs:
           python-version: '3.12'
       - run: python scripts/build_bmi_sources.py
       - run: python -m json.tool docs/data/bmi-source-series.json > /dev/null
+      - run: python scripts/audit_bmi_join.py
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/bmi-source-series.json
+          git add docs/data/bmi-source-series.json docs/data/bmi-audit.json
           if ! git diff --cached --quiet; then
             git commit -m "Uppdatera BMI-källserier SCB och Socialstyrelsen"
             git push
