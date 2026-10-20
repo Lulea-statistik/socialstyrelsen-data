@@ -287,6 +287,52 @@ async function loadSCBDefinition(){
 el('definition-mode').addEventListener('change',setDefinitionMode);
 for(const id of ['scb-definition-cause','scb-definition-age','scb-definition-sex'])el(id).addEventListener('change',renderSCBDefinition);
 
+
+let regionalEducation=null;
+const regionalEduColors={'2580':'#991b2b','25':'#c79a22','00':'#2563eb'};
+function renderRegionalEducation(){
+ if(!regionalEducation)return;
+ const svg=el('regional-education-chart'),legend=el('regional-education-legend');
+ svg.replaceChildren();legend.replaceChildren();
+ const val=id=>el('regional-education-'+id).value;
+ const d=regionalEducation.dimensions;
+ const label=(dim,code)=>{const i=d[dim].values.indexOf(code);return d[dim].labels[i]||code};
+ const selected=regionalEducation.observations.filter(r=>r.sex===val('sex')&&r.age===val('age')&&r.level===val('level'));
+ const years=d.year.values,series=['2580','25','00'].map(region=>({
+   region,label:label('region',region),color:regionalEduColors[region],
+   values:selected.filter(r=>r.region===region).sort((a,b)=>String(a.year).localeCompare(String(b.year)))
+ }));
+ const all=series.flatMap(s=>s.values);
+ el('regional-education-status').textContent=label('level',val('level'))+' – '+label('age',val('age'))+', '+label('sex',val('sex'))+'. Andel (%) av motsvarande regionala utbildningspopulation, inte dödstal.';
+ if(!all.length){el('regional-education-status').textContent+=' Inga observationer för urvalet.';return}
+ const ns='http://www.w3.org/2000/svg',Y=n=>310-n*2.6,X=yr=>70+years.indexOf(String(yr))/(years.length-1||1)*870;
+ const node=(tag,props,text)=>{const e=document.createElementNS(ns,tag);Object.entries(props).forEach(([key,value])=>e.setAttribute(key,value));if(text!==undefined)e.textContent=text;svg.append(e);return e};
+ for(let tick=0;tick<=100;tick+=25){const y=Y(tick);node('line',{x1:70,x2:940,y1:y,y2:y,stroke:'#e4e9ee'});node('text',{x:12,y:y+4},tick+' %')}
+ years.forEach((yr,i)=>{if(i%Math.max(1,Math.ceil(years.length/8))===0)node('text',{x:X(yr)-17,y:340},yr)});
+ for(const s of series){
+   const legendItem=document.createElement('span');legendItem.textContent='● '+s.label;legendItem.style.color=s.color;legend.append(legendItem);
+   const byYear=new Map(s.values.map(r=>[r.year,r]));
+   let segment=[];
+   const flush=()=>{if(segment.length>1)node('polyline',{points:segment.map(r=>X(r.year)+','+Y(r.share)).join(' '),stroke:s.color,'stroke-width':2.6,fill:'none'});segment=[]};
+   for(const yr of years){const p=byYear.get(yr);if(!p){flush();continue}segment.push(p)}flush();
+   for(const r of s.values){const circle=node('circle',{cx:X(r.year),cy:Y(r.share),r:4,fill:s.color});const tip=document.createElementNS(ns,'title');tip.textContent=s.label+', '+r.year+': '+r.share.toLocaleString('sv-SE',{maximumFractionDigits:2})+' %';circle.append(tip)}
+ }
+}
+async function loadRegionalEducation(){
+ if(regionalEducation){renderRegionalEducation();return}
+ try{
+  const response=await fetch('data/scb-regional-education.json');
+  if(!response.ok)throw Error('SCB:s regionala utbildningsdata har ännu inte byggts. Kör GitHub Actions: Bygg SCB regional utbildning.');
+  regionalEducation=await response.json();
+  for(const key of ['level','sex','age']){
+    const select=el('regional-education-'+key),dim=regionalEducation.dimensions[key];
+    select.replaceChildren();
+    dim.values.forEach((v,i)=>{if(key==='level'&&v===regionalEducation.education_total_code)return;const option=document.createElement('option');option.value=v;option.textContent=dim.labels[i]||v;select.append(option)});
+    select.addEventListener('change',renderRegionalEducation);
+  }
+  renderRegionalEducation();
+ }catch(err){el('regional-education-status').textContent=err.message}
+}
 document.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.area;for(const t of document.querySelectorAll('[data-area]'))t.setAttribute('aria-selected',t===b?'true':'false');el('regional-education-panel').hidden=a!=='regional-education';if(a==='regional-education')loadRegionalEducation();el('scb-definition-panel').hidden=a!=='dodsorsaker'||el('definition-mode').value!=='scb';el('explore').hidden=a!=='dodsorsaker'||el('definition-mode').value==='scb';el('maternity').hidden=a!=='fodsel';el('risk-panel').hidden=a!=='risk';el('scb-education-panel').hidden=a!=='education';if(a==='education')loadSCBEducation();if(a==='risk')populateRisk();if(a==='fodsel')loadMaternity().catch(e=>{el('maternity-status').textContent='Kunde inte läsa graviditetsdata: '+e.message});el('results').hidden=a!=='dodsorsaker'||el('definition-mode').value==='scb';if(a==='dodsorsaker')setDefinitionMode();let title={dodsorsaker:'Dödsorsaker 1997–2025',ekonomi:'Ekonomiskt bistånd 1990–2025',fodsel:'Graviditeter, förlossningar och nyfödda 1973–2024', 'regional-education':'Utbildningsnivå efter region',metod:'Metod & data'};el('heading').textContent=title[a];el('status').textContent=a==='dodsorsaker'?(dataset?'Välj region, diagnos, kön, ålder och mått.':'Bearbetade dödsorsaksdata saknas ännu.'):a==='metod'?'Källa: Socialstyrelsens publicerade CSV-exporter. Bearbetningen görs i GitHub Actions. Årsdata; ingen kommunupplösning i dödsorsaksfilen. Dödstal per 100 000 är inte åldersstandardiserade. Diagnosgrupper kan överlappa.':'Detta statistikområde ansluts när respektive CSV-arkiv har granskats och bearbetats.'}));
 el('csv').addEventListener('click',()=>{const txt='År;Värde\n'+shown.map(r=>r[1]+';'+String(r[6]).replace('.',',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='socialstyrelsen-urval.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
 
