@@ -25,11 +25,21 @@ def main():
   payload=json.dumps({'query':[{'code':v['code'],'selection':{'filter':'item','values':v['values']}} for v in dims], 'response':{'format':'json'}},ensure_ascii=False).encode('utf-8')
   data=request(url,payload)
   codes=[v['code'] for v in data['columns']]
+  markers=Counter()
   for row in data['data']:
    val=row['values'][0]
-   try:number=float(val.replace(',','.'))
-   except (ValueError,AttributeError):continue
-   out['observations'].append({'table':group,'dimensions':dict(zip(codes,row['key'])),'value':number})
+   val=str(val) if val is not None else ''
+   try:
+    number=float(val.replace(',','.'))
+    is_numeric=True
+   except (ValueError,AttributeError):
+    number=None
+    is_numeric=False
+    markers[val]+=1
+   dimensions=dict(zip(codes,row['key']))
+   raw_cells['cells'].append({'table':group,'dimensions':dimensions,'raw_value':val,'numeric':is_numeric})
+   if is_numeric:
+    out['observations'].append({'table':group,'dimensions':dimensions,'value':number})
   raw_cells['tables'][group]={'returned_cells':len(data['data']),'non_numeric_markers':dict(sorted(markers.items())),'metadata_notes':metadata.get('note'),'metadata_updated':metadata.get('updated')}
   print(group,'rows',sum(r['table']==group for r in out['observations']),flush=True)
  if not all(any(row['table']==k for row in out['observations']) for k in TABLES):raise ValueError('No usable observations in at least one SCB table')
