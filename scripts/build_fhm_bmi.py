@@ -80,17 +80,28 @@ def main():
     if not isinstance(data.get("data"), list):
         raise ValueError("Expected PxWeb JSON data records")
     codes = [v["code"] for v in data["columns"]]
+    measure_candidates = [v for v in variables if v["code"] == "ContentsCode"]
+    if len(measure_candidates) != 1:
+        raise ValueError("Expected exactly one ContentsCode variable; inspect FHM metadata")
+    measure = measure_candidates[0]
+    dimensions_codes = [code for code in codes if code != measure["code"]]
+    print("FHM columns:", codes, "dimension columns:", dimensions_codes,
+          "measures:", measure["values"], flush=True)
     observations = []
     for row in data["data"]:
-        if len(row["key"]) != len(codes):
-            raise ValueError("PxWeb key and column length mismatch")
+        if len(row["key"]) != len(dimensions_codes):
+            raise ValueError(f"PxWeb dimension keys {len(row[\x27key\x27])} vs dimension columns {len(dimensions_codes)}")
+        if len(row["values"]) != len(measure["values"]):
+            raise ValueError("PxWeb value count differs from available ContentsCode measures")
         for index, original in enumerate(row["values"]):
             value = str(original) if original is not None else ""
             try:
                 number = float(value.replace(",", "."))
             except (ValueError, TypeError):
                 number = None
-            observations.append({"dimensions": dict(zip(codes, row["key"])), "measure_index": index,
+            dimensions = dict(zip(dimensions_codes, row["key"]))
+            dimensions[measure["code"]] = measure["values"][index]
+            observations.append({"dimensions": dimensions, "measure_index": index,
                                  "raw_value": value, "value": number})
     result = {
         "status": "official_FHM_BMI_source_separate_from_SCB",
