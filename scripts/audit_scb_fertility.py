@@ -1,7 +1,7 @@
 """Discover official SCB PxWeb metadata before designing fertility-rate joins.
 Do not assume variable codes or compute fertility ratios until verified.
 """
-import json,urllib.request,urllib.error
+import json,urllib.request,urllib.error,time,random
 from pathlib import Path
 BASE="https://api.scb.se/OV0104/v1/doris/sv/ssd/BE/BE0101/"
 TABLES={"births_pre2025":"BE0101H/FoddaK","population_pre2025":"BE0101A/BefolkningNy"}
@@ -11,8 +11,16 @@ for key,path in TABLES.items():
     url=BASE+path
     try:
         req=urllib.request.Request(url,headers={"User-Agent":"Lulea-statistik-research/1.0"})
-        with urllib.request.urlopen(req,timeout=50) as r:
-            meta=json.load(r)
+        meta=None
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req,timeout=50) as r:
+                    meta=json.load(r)
+                break
+            except (OSError,ValueError) as transient:
+                print(f'{key}: API attempt {attempt+1}/5 failed: {transient}',flush=True)
+                if attempt==4: raise
+                time.sleep(min(3*(attempt+1),15))
         out["tables"][key]={"url":url,"title":meta.get("title"),"variables":[
             {"code":v.get("code"),"text":v.get("text"),"values":v.get("values",[]),
             "valueTexts":v.get("valueTexts",[]),"elimination":v.get("elimination")}
