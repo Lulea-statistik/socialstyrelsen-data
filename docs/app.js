@@ -30,6 +30,46 @@ function updateRank(){
  el('diagnos-sok').value='';
  el('status').textContent='Rangordning för '+r.year+' efter '+(el('rankmetric').value==='share'?'andel av dödsfall':'dödsfall per 100 000')+'. Avser ICD-huvudkapitel, inte överlappande diagnosundergrupper.';
 }
+const scbSocialGroups=[
+ {id:'tot',label:'Samtliga dödsorsaker',code:'99',quality:'Samma totalbegrepp; SCB:s särskilda åldersurval måste fortfarande respekteras.'},
+ {id:'and',label:'Andningsorganens sjukdomar',code:'J00-J99',quality:'Direkt ICD-kapitel J; jämför endast likvärdiga mått och åldrar.'},
+ {id:'hjärt',label:'Hjärt- och kärlsjukdomar',code:'I00-I99',quality:'Direkt ICD-kapitel I; jämför endast likvärdiga mått och åldrar.'},
+ {id:'tum',label:'Tumörer',code:null,quality:'SCB:s C/D0–D4 kan inte härledas exakt från det bredare intervallet C00–D48.'},
+ {id:'skad',label:'Skador och förgiftningar',code:null,quality:'SCB:s exkluderingar och S/T-urval skiljer sig från V01–Y98.'},
+ {id:'sjalv',label:'Självmord och oklar avsikt',code:null,quality:'Kräver ett särskilt urval av X/Y-koder som saknas i det aggregerade webbunderlaget.'},
+ {id:'alk',label:'Alkoholrelaterad dödlighet',code:null,quality:'SCB räknar alkoholdiagnoser även som bidragande dödsorsak; kan inte återskapas ur grundorsaksgrupper.'},
+ {id:'dacov',label:'Därav covid-19',code:null,quality:'SCB:s särskilda kod- och tidsdefinition behöver kontrolleras före likställning med U07.'},
+ {id:'övr',label:'Övriga dödsorsaker',code:null,quality:'Restgrupp kräver en verifierad, disjunkt diagnospartition och kan inte uppskattas genom avdrag.'}
+];
+function setSocialCauseMode(){
+ const active=el('social-cause-mode').value==='scb',scb=el('social-scb-cause');
+ el('social-scb-cause-label').hidden=!active;el('social-icd-label').hidden=active;
+ el('topprank').disabled=active;el('rankmetric').disabled=active;
+ const info=el('social-scb-explanation');info.hidden=!active;
+ if(!active){info.textContent='';draw();return}
+ if(!scb.options.length){for(const g of scbSocialGroups){const o=document.createElement('option');o.value=g.id;o.textContent=g.label;scb.append(o)}}
+ updateSocialSCBCause();
+}
+function updateSocialSCBCause(){
+ if(el('social-cause-mode').value!=='scb')return;
+ const g=scbSocialGroups.find(x=>x.id===el('social-scb-cause').value);
+ const info=el('social-scb-explanation');
+ if(g.code&&dataset?.meta?.diagnos?.[g.code]){
+  const diagnosis=el('diagnos'),opt=[...diagnosis.options].find(o=>o.value===g.code);
+  if(!opt){fill('diagnos')}
+  diagnosis.value=g.code;
+  info.textContent='Socialstyrelsens kod '+g.code+'. '+g.quality+' Detta är ingen ny summering av överlappande ICD-intervall.';
+  draw();
+ }else{
+  info.textContent='Kan inte beräknas säkert ur befintliga Socialstyrelsen-data. '+g.quality;
+  el('chart-title').textContent=g.label+' – kräver kodspecifik datainsamling';
+  el('chart').replaceChildren();el('regional-chart').replaceChildren();el('sex-chart').replaceChildren();el('age-chart').replaceChildren();
+  for(const id of ['rows','regional-legend','sex-legend','age-legend'])el(id).replaceChildren();
+  shown=[];
+ }
+}
+el('social-cause-mode').addEventListener('change',setSocialCauseMode);
+el('social-scb-cause').addEventListener('change',updateSocialSCBCause);
 function drawRegions(){
  const svg=el('regional-chart'),legend=el('regional-legend');svg.replaceChildren();legend.replaceChildren();
  const ns='http://www.w3.org/2000/svg',metric=Number(el('matt').value),diagnosis=el('diagnos').value,sex=el('kon').value,age=el('alder').value;
@@ -71,7 +111,7 @@ function drawComparisons(){
  chartCompare('age-chart','age-legend',lines);
 }
 
-function draw(){
+function draw(){if(el('social-cause-mode').value==='scb'&&!scbSocialGroups.find(x=>x.id===el('social-scb-cause').value)?.code){updateSocialSCBCause();return}
  const keys=[el('matt').value,...['year','region','diagnos','kon','alder'].map(x=>x)]; // dimensions from imported rows
  shown=dataset.data.filter(r=> String(r[0])===keys[0]&&String(r[2])===el('region').value&&String(r[3])===el('diagnos').value&&String(r[4])===el('kon').value&&String(r[5])===el('alder').value).sort((a,b)=>a[1]-b[1]);
  el('chart-title').textContent=metaLabel('diagnos',el('diagnos').value)+' – '+metaLabel('region',el('region').value);
