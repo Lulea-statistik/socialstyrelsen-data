@@ -1,7 +1,7 @@
 """Fetch and validate SCB's published mortality/education tables through PxWeb API.
 Keep official categories rather than pretending a 1:1 ICD crosswalk.
 """
-import json,urllib.request,urllib.parse,time
+import json,urllib.request,urllib.parse,time\nfrom collections import Counter
 from pathlib import Path
 BASE='https://api.scb.se/OV0104/v1/doris/sv/ssd/LE/LE0201/LE0201Hälsa/'
 TABLES={'age':'Tema525','education':'Tema526N'}
@@ -16,7 +16,7 @@ def request(url,payload=None):
    time.sleep(2*(attempt+1))
 def main():
  out={'status':'SCB_official_source_tables','sources':{},'observations':[],'caveats':['Do not sum derived subgroups marked därav into total','Rates per 100,000 are not counts','Education table covers 35–84 and may be age-confounded','SCB and Socialstyrelsen categories require source-verified ICD crosswalk']}
- for group,table in TABLES.items():
+ raw_cells={'status':'original_scb_cell_markers_preserved','tables':{},'cells':[]}\n for group,table in TABLES.items():
   url=BASE.replace('LE0201Hälsa','LE0201H%C3%A4lsa')+table;metadata=request(url)
   dims=metadata['variables']
   out['sources'][group]={'url':url,'title':metadata.get('title'),'dimensions':[{ 'code':v['code'],'text':v['text'],'values':v['values'],'valueTexts':v['valueTexts']} for v in dims]}
@@ -28,9 +28,9 @@ def main():
    try:number=float(val.replace(',','.'))
    except (ValueError,AttributeError):continue
    out['observations'].append({'table':group,'dimensions':dict(zip(codes,row['key'])),'value':number})
-  print(group,'rows',sum(r['table']==group for r in out['observations']),flush=True)
+  raw_cells['tables'][group]={'returned_cells':len(data['data']),'non_numeric_markers':dict(sorted(markers.items())),'metadata_notes':metadata.get('note'),'metadata_updated':metadata.get('updated')}\n  print(group,'rows',sum(r['table']==group for r in out['observations']),flush=True)
  if not all(any(row['table']==k for row in out['observations']) for k in TABLES):raise ValueError('No usable observations in at least one SCB table')
  p=Path('docs/data/scb-mortality-education.json');p.parent.mkdir(parents=True,exist_ok=True)
  p.write_text(json.dumps(out,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
- print('Saved',p,p.stat().st_size)
+ q=Path('docs/data/scb-raw-cell-markers.json')\n q.write_text(json.dumps(raw_cells,ensure_ascii=False,separators=(',',':')),encoding='utf-8')\n print('Saved',p,p.stat().st_size,'and',q)
 if __name__=='__main__':main()
