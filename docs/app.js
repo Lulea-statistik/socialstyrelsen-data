@@ -332,7 +332,7 @@ function fhmDimension(pattern){return fhmBMI?.variables.find(v=>pattern.test((v.
 function fhmOptions(id,dim){
  const select=el(id);select.replaceChildren();
  if(!dim)return;
- dim.values.forEach((value,i)=>{const o=document.createElement('option');o.value=value;o.textContent=dim.valueTexts[i]||value;select.append(o)});
+ dim.values.forEach((value,i)=>{if(id==='fhm-bmi-region'&&!fhmBMI.observations.some(r=>r.dimensions[dim.code]===value))return;const o=document.createElement('option');o.value=value;o.textContent=dim.valueTexts[i]||value;select.append(o)});
  const regionDefault=id==='fhm-bmi-region'?['2580','25','00'].find(x=>dim.values.includes(x)):null;
  if(regionDefault)select.value=regionDefault;
 }
