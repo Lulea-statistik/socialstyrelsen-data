@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TABLE_PATH = "A_Folkhalsodata/A_Folkhalsodata__Z_ovrigdata__HLVkn__Hals/vikt.px"
 API_CANDIDATES = [
     "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/" + TABLE_PATH,
+    "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/" + TABLE_PATH.removesuffix(".px"),
+    "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/api/v1/sv/" + TABLE_PATH + "/",
     "https://fohm-app.folkhalsomyndigheten.se/Folkhalsodata/pxweb/api/v1/sv/" + TABLE_PATH,
 ]
 
