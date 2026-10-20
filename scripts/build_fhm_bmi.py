@@ -80,29 +80,32 @@ def main():
     if not isinstance(data.get("data"), list):
         raise ValueError("Expected PxWeb JSON data records")
     codes = [v["code"] for v in data["columns"]]
-    measure_candidates = [v for v in variables if v["code"] == "ContentsCode"]
-    if len(measure_candidates) != 1:
-        raise ValueError("Expected exactly one ContentsCode variable; inspect FHM metadata")
-    measure = measure_candidates[0]
-    dimensions_codes = [code for code in codes if code != measure["code"]]
-    print("FHM columns:", codes, "dimension columns:", dimensions_codes,
-          "measures:", measure["values"], flush=True)
+    print("FHM metadata dimensions:", [(v["code"], v["text"], v["values"][:5]) for v in variables], flush=True)
+    print("FHM response columns:", data["columns"], flush=True)
+    sample = data["data"][0] if data["data"] else None
+    print("FHM sample row:", sample, flush=True)
     observations = []
     for row in data["data"]:
-        if len(row["key"]) != len(dimensions_codes):
-            raise ValueError("PxWeb dimension key count %d vs dimension columns %d" % (len(row["key"]), len(dimensions_codes)))
-        if len(row["values"]) != len(measure["values"]):
-            raise ValueError("PxWeb value count differs from available ContentsCode measures")
-        for index, original in enumerate(row["values"]):
-            value = str(original) if original is not None else ""
-            try:
-                number = float(value.replace(",", "."))
-            except (ValueError, TypeError):
-                number = None
-            dimensions = dict(zip(dimensions_codes, row["key"]))
-            dimensions[measure["code"]] = measure["values"][index]
-            observations.append({"dimensions": dimensions, "measure_index": index,
-                                 "raw_value": value, "value": number})
+        key = row["key"]
+        values = row["values"]
+        if len(key) > len(codes):
+            raise ValueError("More keys than response columns")
+        dimension_codes = codes[:len(key)]
+        if len(values) != 1:
+            raise ValueError("Unexpected multiple values per row; review FHM metadata before interpreting")
+        dimensions = dict(zip(dimension_codes, key))
+        original = values[0]
+        value = str(original) if original is not None else ""
+        try:
+            number = float(value.replace(",", "."))
+        except (ValueError, TypeError):
+            number = None
+        observations.append({"dimensions": dimensions, "raw_value": value, "value": number})
+    # Preserve the native metadata: no invented ContentsCode or rate/CI labels.
+    # If metrics are columns in the response keys, they already exist in dimensions.
+    # If metrics are separate response values, stop rather than attach wrong labels.
+    if not observations:
+        raise ValueError("No observations in FHM response")
     result = {
         "status": "official_FHM_BMI_source_separate_from_SCB",
         "url": url,
