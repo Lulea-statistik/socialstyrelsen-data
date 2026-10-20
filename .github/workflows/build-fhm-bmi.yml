@@ -1,0 +1,26 @@
+name: Bygg FHM BMI-jämförelse
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/build_fhm_bmi.py
+      - run: python scripts/build_fhm_bmi.py
+      - run: python -m json.tool docs/data/fhm-bmi.json > /dev/null
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/fhm-bmi.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Uppdatera FHM BMI-data"
+            git pull --rebase origin main
+            git push
+          fi
