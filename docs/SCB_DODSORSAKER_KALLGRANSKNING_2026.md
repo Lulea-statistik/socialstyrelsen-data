@@ -46,3 +46,24 @@ Denna anteckning är en **källinventering och riskbedömning**, inte en färdig
 
 **Källkritisk not:** I PDF-texten verkar gruppen 50–64 vara felskriven som `50-664`. Åldersklasserna ovan är den rimliga fyrgruppsindelningen, men bör kontrolleras direkt med SCB före viktning.
 
+
+## Direkta tabellfotnoter för Tema526N (uppgift från SCB:s tabell, kontrollerad 2026-10-20)
+
+> Källa: Dödsorsaksregistret, Socialstyrelsen, publicerad i SCB Jämställdhet.
+>
+> Dödstal: Antal döda per 100 000 av medelfolkmängden.
+>
+> Observera att uppgifter för tidigare årgångar kan revideras i samband med att nya årgångar publiceras.
+>
+> Utbildningsnivå baseras på 2019 års uppgifter.
+>
+> Nivåklassificeringen är gjord enligt Svensk Utbildningsnomenklatur (SUN).
+
+**Metodkonsekvenser:**
+- Dödsorsaksregistrets gemensamma ursprung betyder **inte** att tabellens diagnosurval, köns-/åldersurval och nämnare automatiskt överensstämmer med Socialstyrelsens exporterade huvudgrupper.
+- Tabellen anger döda per 100 000 av medelfolkmängden. Uppgifter om eventuell åldersstandardisering måste stödjas av separat metodbeskrivning (se indikator 5.26 ovan); blanda inte ett åldersstandardiserat tal med ett ospecificerat eller åldersspecifikt tal.
+- Utbildning enligt SUN och basår 2019 ska ingå i diagrammets synliga metodinformation.
+- Registrera datauttagets datum/publiceringsversion för reproducerbarhet; statistikår är inte samma sak som publiceringsår.
+- Sammanläggning av flera redan beräknade dödstal är **inte** korrekt. Beräkna i så fall antal och relevanta nämnare först, med korrekt standardisering.
+
+Källa: https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__LE__LE0201__LE0201H%C3%A4lsa/Tema526N/
