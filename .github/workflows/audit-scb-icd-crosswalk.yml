@@ -16,11 +16,13 @@ jobs:
       - run: python -m json.tool docs/data/scb-icd-crosswalk-audit.json > /dev/null
       - run: python scripts/audit_scb_source_metadata.py
       - run: python -m json.tool docs/data/scb-source-metadata-audit.json > /dev/null
+      - run: python scripts/audit_scb_observations.py
+      - run: python -m json.tool docs/data/scb-observation-audit.json > /dev/null
       - run: python -m unittest discover -s tests -p 'test_scb_icd_crosswalk.py' -v
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/scb-icd-crosswalk-audit.json docs/data/scb-source-metadata-audit.json
+          git add docs/data/scb-icd-crosswalk-audit.json docs/data/scb-source-metadata-audit.json docs/data/scb-observation-audit.json
           if ! git diff --cached --quiet; then
             git commit -m "Dokumentera granskningsstatus SCB ICD"
             git push
