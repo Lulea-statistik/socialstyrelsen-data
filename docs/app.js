@@ -343,7 +343,7 @@ function fhmBMIPlot(){
  const label=(d,v)=>d.valueTexts[d.values.indexOf(v)]||v;
  const chosenClass=el('fhm-bmi-class').value,chosenSex=el('fhm-bmi-sex').value,showCI=el('fhm-bmi-ci').checked;
  const measureId={central:'01',low:'02',high:'03'};
- const periods=year.values.map(v=>({code:v,match:v.match(/^(\\d{4})-(\\d{4})$/)})).filter(v=>v.match);
+ const periods=year.values.map(v=>({code:v,match:v.match(/^(\d{4})-(\d{4})$/)})).filter(v=>v.match);
  const lookup=new Map(fhmBMI.observations.map(r=>[
   [r.dimensions.Region,r.dimensions[klass.code],r.dimensions[sex.code],r.dimensions[year.code],r.dimensions[measure.code]].join('|'),r.value
  ]));
