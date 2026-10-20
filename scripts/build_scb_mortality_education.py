@@ -1,7 +1,7 @@
 """Fetch and validate SCB's published mortality/education tables through PxWeb API.
 Keep official categories rather than pretending a 1:1 ICD crosswalk.
 """
-import json,urllib.request,time
+import json,urllib.request,urllib.parse,time
 from pathlib import Path
 BASE='https://api.scb.se/OV0104/v1/doris/sv/ssd/LE/LE0201/LE0201Hälsa/'
 TABLES={'age':'Tema525','education':'Tema526N'}
@@ -17,7 +17,7 @@ def request(url,payload=None):
 def main():
  out={'status':'SCB_official_source_tables','sources':{},'observations':[],'caveats':['Do not sum derived subgroups marked därav into total','Rates per 100,000 are not counts','Education table covers 35–84 and may be age-confounded','SCB and Socialstyrelsen categories require source-verified ICD crosswalk']}
  for group,table in TABLES.items():
-  url=BASE+table;metadata=request(url)
+  url=BASE.replace('LE0201Hälsa','LE0201H%C3%A4lsa')+table;metadata=request(url)
   dims=metadata['variables']
   out['sources'][group]={'url':url,'title':metadata.get('title'),'dimensions':[{ 'code':v['code'],'text':v['text'],'values':v['values'],'valueTexts':v['valueTexts']} for v in dims]}
   payload=json.dumps({'query':[{'code':v['code'],'selection':{'filter':'item','values':v['values']}} for v in dims], 'response':{'format':'json'}},ensure_ascii=False).encode('utf-8')
