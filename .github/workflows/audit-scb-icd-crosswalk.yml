@@ -1,0 +1,24 @@
+name: Granska SCB ICD-mappning
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/audit_scb_icd_crosswalk.py
+      - run: python -m json.tool docs/data/scb-icd-crosswalk-audit.json > /dev/null
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/scb-icd-crosswalk-audit.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Dokumentera granskningsstatus SCB ICD"
+            git push
+          fi
