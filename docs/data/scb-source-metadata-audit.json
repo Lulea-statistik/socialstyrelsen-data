@@ -1,0 +1,102 @@
+{
+  "status": "source_metadata_checked_icd_equivalence_not_approved",
+  "source": "docs/data/scb-mortality-education.json",
+  "sources": {
+    "age": {
+      "source_url": "https://api.scb.se/OV0104/v1/doris/sv/ssd/LE/LE0201/LE0201H%C3%A4lsa/Tema525",
+      "title": "Dödsorsaker. Antal döda per 100 000 av medelbefolkningen efter dödsorsak, ålder, kön, tabellinnehåll och år",
+      "cause_codes": [
+        "alk",
+        "and",
+        "hjärt",
+        "sjalv",
+        "skad",
+        "tum",
+        "övr",
+        "tot"
+      ],
+      "cause_labels": {
+        "alk": "alkoholrelaterad dödlighet",
+        "and": "andningsorganens sjukdomar",
+        "hjärt": "hjärt-kärlsjukdomar",
+        "sjalv": "självmord och skadehändelse med oklar avsikt",
+        "skad": "skador och förgiftningar, exkl. skadehändelse med oklar avsikt",
+        "tum": "tumörer",
+        "övr": "övrigt",
+        "tot": "totalt"
+      },
+      "years": [
+        "2017",
+        "2018",
+        "2019",
+        "2020",
+        "2021",
+        "2022",
+        "2023",
+        "2024",
+        "2025"
+      ],
+      "dimension_codes": [
+        "Dodsorsak",
+        "Alder",
+        "Kon",
+        "ContentsCode",
+        "Tid"
+      ],
+      "observations": 848
+    },
+    "education": {
+      "source_url": "https://api.scb.se/OV0104/v1/doris/sv/ssd/LE/LE0201/LE0201H%C3%A4lsa/Tema526N",
+      "title": "Dödsorsaker för personer i åldern 35–84 år. Antal döda per 100 000 av medelbefolkningen efter dödsorsak, utbildningsnivå, kön, tabellinnehåll och år",
+      "cause_codes": [
+        "and",
+        "hjärt",
+        "sjalv",
+        "skad",
+        "tum",
+        "övr",
+        "tot2",
+        "daalk",
+        "dacov"
+      ],
+      "cause_labels": {
+        "and": "andningsorganens sjukdomar",
+        "hjärt": "hjärt-kärlsjukdomar",
+        "sjalv": "självmord och skadehändelse med oklar avsikt",
+        "skad": "skador och förgiftningar, exkl. skadehändelse med oklar avsikt",
+        "tum": "tumörer",
+        "övr": "övrigt",
+        "tot2": "totalt",
+        "daalk": "därav alkoholrelaterad dödlighet",
+        "dacov": "därav Covid-19"
+      },
+      "years": [
+        "2020",
+        "2021",
+        "2022",
+        "2023",
+        "2024",
+        "2025"
+      ],
+      "dimension_codes": [
+        "Dodsorsak",
+        "UtbildningsNiva",
+        "Kon",
+        "ContentsCode",
+        "Tid"
+      ],
+      "observations": 324
+    }
+  },
+  "age_only_causes": [
+    "alk",
+    "tot"
+  ],
+  "education_only_causes": [
+    "daalk",
+    "dacov",
+    "tot2"
+  ],
+  "approved_for_icd_aggregation": false,
+  "warning": "SCB source category presence does not prove Socialstyrelsen ICD equivalence. No rates were summed."
+}
