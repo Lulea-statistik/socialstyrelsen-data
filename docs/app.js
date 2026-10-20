@@ -319,7 +319,7 @@ function renderRegionalEducation(){
  }));
  const all=series.flatMap(s=>s.values),latest=years.filter(y=>series.every(s=>s.values.some(v=>v.year===y))).at(-1);
  el('regional-education-status').textContent=levelLabel+' – '+label('age',val('age'))+', '+label('sex',val('sex'))+'. Andel av samtliga åtta utbildningskategorier (även okänd utbildning). Grupper summeras utan överlappning.';
- if(!all.length){el('regional-education-status').textContent+=' Inga observationer för urvalet.';summaryStatus.textContent='Ingen gemensam jämförelseperiod.';return}
+ if(!all.length){el('regional-education-status').textContent+=' Inga observationer för urvalet.';summaryStatus.textContent='Ingen gemensam jämförelseperiod.';renderEducationStructure();return}
  const ns='http://www.w3.org/2000/svg',Y=n=>310-n*2.6,X=yr=>70+years.indexOf(String(yr))/(years.length-1||1)*870;
  const node=(tag,props,txt)=>{const e=document.createElementNS(ns,tag);Object.entries(props).forEach(([key,value])=>e.setAttribute(key,value));if(txt!==undefined)e.textContent=txt;svg.append(e);return e};
  for(let tick=0;tick<=100;tick+=25){const y=Y(tick);node('line',{x1:70,x2:940,y1:y,y2:y,stroke:'#e4e9ee'});node('text',{x:12,y:y+4},tick+' %')}
@@ -345,6 +345,42 @@ function renderRegionalEducation(){
   tr.firstChild.style.borderLeft='4px solid '+r.color;tbody.append(tr)}
  table.append(tbody);summary.append(table);
  summaryStatus.textContent=latest+' · '+levelLabel+' · '+label('age',val('age'))+' · '+label('sex',val('sex'))+'. Skillnader uttrycks i procentenheter, inte procent.';
+ renderEducationStructure();
+}
+const educationStructureColors=['#a65a38','#e4b34b','#468c9b','#929aa6'];
+function renderEducationStructure(){
+ const svg=el('regional-education-structure'),legend=el('regional-education-structure-legend'),status=el('regional-education-structure-status');
+ svg.replaceChildren();legend.replaceChildren();
+ if(!regionalEducation)return;
+ const d=regionalEducation.dimensions,sex=el('regional-education-sex').value,age=el('regional-education-age').value;
+ const regions=['2580','25','00'],years=d.year.values;
+ const displayName=(kind,value)=>{const idx=d[kind].values.indexOf(value);return d[kind].labels[idx]||value};
+ const matched=regionalEducation.observations.filter(r=>r.sex===sex&&r.age===age);
+ const lookup=new Map(matched.map(r=>[[r.region,r.year,r.level].join('|'),r.share]));
+ const complete=(region,year)=>regionalEduGroups.every(group=>group.levels.every(code=>Number.isFinite(lookup.get([region,year,code].join('|')))));
+ const year=years.filter(y=>regions.every(region=>complete(region,y))).at(-1);
+ if(!year){status.textContent='Ingen gemensam period med fullständiga utbildningsuppgifter.';return}
+ const cells=regions.map(region=>({name:displayName('region',region),region,shares:regionalEduGroups.map(g=>g.levels.reduce((sum,level)=>sum+lookup.get([region,year,level].join('|')),0))}));
+ const fmt=n=>n.toLocaleString('sv-SE',{minimumFractionDigits:1,maximumFractionDigits:1});
+ status.textContent=year+' · '+displayName('age',age)+' · '+displayName('sex',sex)+'. Varje stapel motsvarar 100 % av befolkningen, inklusive okänd utbildningsnivå.';
+ const ns='http://www.w3.org/2000/svg';
+ const add=(tag,attrs,txt,parent=svg)=>{const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(txt!==undefined)e.textContent=txt;parent.append(e);return e};
+ for(let i=0;i<=4;i++){const x=175+i*185;add('line',{x1:x,y1:38,x2:x,y2:246,stroke:'#e6e9ef'});add('text',{x:x-12,y:26,fill:'currentColor','font-size':14},(i*25)+' %')}
+ for(let index=0;index<cells.length;index++){
+  const row=cells[index],top=60+index*78;
+  add('text',{x:10,y:top+29,fill:'currentColor','font-size':17},row.name);
+  let current=175;
+  const sum=row.shares.reduce((a,b)=>a+b,0);
+  if(Math.abs(sum-100)>0.001){status.textContent+=' Kontrollfel: stapelsumman avviker från 100 %.';continue}
+  row.shares.forEach((share,i)=>{
+   const width=share/100*740;
+   const rect=add('rect',{x:current,y:top,width:width,height:42,fill:educationStructureColors[i]});
+   const title=add('title',{},row.name+' – '+regionalEduGroups[i].label+': '+fmt(share)+' %',rect);
+   if(width>49)add('text',{x:current+width/2,y:top+27,'text-anchor':'middle',fill:i===1?'#1f2937':'#ffffff','font-size':14,'font-weight':600},fmt(share)+' %');
+   current+=width;
+  });
+ }
+ for(let i=0;i<regionalEduGroups.length;i++){const item=document.createElement('span');item.textContent='■ '+regionalEduGroups[i].label;item.style.color=educationStructureColors[i];legend.append(item)}
 }
 async function loadRegionalEducation(){
  if(regionalEducation){renderRegionalEducation();return}
