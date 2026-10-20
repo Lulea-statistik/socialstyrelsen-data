@@ -15,7 +15,12 @@ def main():
     result = {"status": "observation_integrity_checked_not_icd_validated", "tables": {}, "approved_for_icd_aggregation": False}
     for table in ("age", "education"):
         dims = data["sources"][table]["dimensions"]
-        codes = [v["code"] for v in dims]
+        codes = [v["code"] for v in dims if v["code"] != "ContentsCode"]
+        # PxWeb JSON puts the selected single ContentsCode in columns/values,
+        # not in the observation key. Validate this singleton via metadata.
+        contents = next((v for v in dims if v["code"] == "ContentsCode"), None)
+        if contents is None or len(contents["values"]) != 1:
+            raise ValueError(f"{table}: expected one ContentsCode measure")
         allowed = {v["code"]: set(v["values"]) for v in dims}
         rows = [r for r in data["observations"] if r["table"] == table]
         seen = set()
@@ -39,13 +44,15 @@ def main():
                 failures.append(f"row {index}: invalid rate value")
         possible = 1
         for v in dims:
-            possible *= len(v["values"])
+            if v["code"] in codes:
+                possible *= len(v["values"])
         result["tables"][table] = {
             "source_url": data["sources"][table]["url"],
             "rows": len(rows),
             "possible_dimension_combinations": possible,
             "missing_or_non_numeric_combinations": possible - len(seen),
             "observed_dimension_values": {code: sorted(values) for code, values in observed.items()},
+            "measure_code": contents["values"][0],
             "failures": failures[:30],
         }
         if failures:
