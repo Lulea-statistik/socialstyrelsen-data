@@ -163,7 +163,11 @@ function renderSCBEducation(){
  const rows=scbEdu.observations.filter(r=>r.table==='education'&&r.dimensions[cause.code]===cc&&r.dimensions[sex.code]===ss);
  const series=education.values.map((v,i)=>({name:lookup(education,v),color:['#991b2b','#d09b22','#2563eb'][i%3],rows:rows.filter(r=>r.dimensions[education.code]===v).map(r=>({year:Number(r.dimensions[year.code]),value:r.value})).filter(r=>Number.isFinite(r.year)).sort((a,b)=>a.year-b.year)}));
  const values=series.flatMap(s=>s.rows.map(r=>r.value));if(!values.length){el('scb-education-status').textContent='Inga data för detta urval.';return}
- el('scb-education-status').textContent=lookup(cause,cc)+' – '+lookup(sex,ss)+'. Dödstal per 100 000, 35–84 år (ej verifierat åldersstandardiserade).';
+ const last=Math.max(...rows.map(r=>Number(r.dimensions[year.code])));
+ const latest=Object.fromEntries(education.values.map(v=>[v,rows.find(r=>r.dimensions[education.code]===v&&Number(r.dimensions[year.code])===last)?.value]));
+ const loEdu=latest['10'],hiEdu=latest['30'],fmt=v=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(v);
+ const comparison=Number.isFinite(loEdu)&&Number.isFinite(hiEdu)&&hiEdu>0?' Skillnad förgymnasial–eftergymnasial '+fmt(loEdu-hiEdu)+' per 100 000; kvot '+fmt(loEdu/hiEdu)+'.':'';
+ el('scb-education-status').textContent=lookup(cause,cc)+' – '+lookup(sex,ss)+'. Dödstal per 100 000, 35–84 år. Senaste år: '+last+'.'+comparison+' Ej verifierat åldersstandardiserade.';
  const max=Math.max(1,...values)*1.1,years=series.flatMap(s=>s.rows.map(r=>r.year)),lo=Math.min(...years),hi=Math.max(...years),ns='http://www.w3.org/2000/svg',X=x=>70+(x-lo)/(hi-lo||1)*860,Y=y=>310-y/max*260;
  function n(tag,attrs,label){const item=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))item.setAttribute(k,v);if(label!==undefined)item.textContent=label;svg.append(item);return item}
  for(let i=0;i<=4;i++){const y=310-i*260/4;n('line',{x1:70,y1:y,x2:935,y2:y,stroke:'#e5e7eb'});n('text',{x:5,y:y+4},new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(i*max/4))}
