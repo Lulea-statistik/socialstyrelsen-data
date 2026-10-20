@@ -330,6 +330,7 @@ async function loadRegionalEducation(){
     dim.values.forEach((v,i)=>{if(key==='level'&&v===regionalEducation.education_total_code)return;const option=document.createElement('option');option.value=v;option.textContent=dim.labels[i]||v;select.append(option)});
     select.addEventListener('change',renderRegionalEducation);
   }
+  if(regionalEducation.dimensions.age.values.includes('tot16-74'))el('regional-education-age').value='tot16-74';
   renderRegionalEducation();
  }catch(err){el('regional-education-status').textContent=err.message}
 }
